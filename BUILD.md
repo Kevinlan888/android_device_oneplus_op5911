@@ -163,6 +163,37 @@ adb reboot
 - `adb sideload` 返回 0 只代表文件传完了，不代表刷入成功。确认方法：重启后看 `getprop ro.boot.slot_suffix` 是否换了槽；或者在系统里用 root 读 `/data/misc/recovery/last_log`，找 `Install from ADB complete (status: 0)`。
 - 开机后快照合并在后台自动完成，可以用 `adb shell snapshotctl dump`（需要 root）确认 `Update state: none`。**合并完成后旧槽的数据就被覆盖了**，不能再切回去当备份。
 
+#### 不进 rec，在开机状态下更新
+
+系统里的 `update_engine` 在后台写另一个槽，期间手机照常可用，不经过 recovery。需要 userdebug 和 `adb root`；`update_engine_client` 由 `device.mk` 打进系统（这个改动之前的版本里没有，要从 `out/target/product/op5911/system/bin/` 推到 `/data/local/tmp` 运行）。
+
+```bash
+Z=$OP5911_OTA_OUT/op5911-ota-incr-<旧>-to-<新>.zip     # 或完整包
+adb root
+adb push "$Z" /data/ota_package/update.zip
+adb shell 'chown system:cache /data/ota_package/update.zip; chmod 644 /data/ota_package/update.zip; restorecon /data/ota_package/update.zip'
+
+# payload.bin 在 zip 里是不压缩存放的，算出它的偏移和大小，再取 payload_properties.txt
+read OFF SIZE < <(python3 -I - "$Z" <<'PY'
+import sys, zipfile, struct
+z = zipfile.ZipFile(sys.argv[1]); i = z.getinfo('payload.bin'); f = open(sys.argv[1], 'rb')
+f.seek(i.header_offset); h = f.read(30); n, e = struct.unpack('<HH', h[26:30])
+print(i.header_offset + 30 + n + e, i.file_size)
+PY
+)
+HEADERS=$(unzip -p "$Z" payload_properties.txt)
+
+adb shell update_engine_client --update --follow \
+    --payload=file:///data/ota_package/update.zip --offset=$OFF --size=$SIZE \
+    --headers="\"$HEADERS\""
+# 最后应输出 onPayloadApplicationComplete(ErrorCode::kSuccess (0)) 和 UPDATED_NEED_REBOOT
+adb shell bootctl get-active-boot-slot      # 已切到另一个槽（0=a，1=b）
+adb reboot
+```
+
+- 实测（2026-11-10）：513 KB 的增量包 72 秒写完，重启后进入新槽、Enforcing，合并自动完成。
+- 写入过程中出错不会动当前槽；没执行 `adb reboot` 之前，可以用 `update_engine_client --cancel` 放弃。
+
 ### 5.2 首次安装（从原厂 ColorOS 或 GSI）
 
 原厂 rec 不认我们的 OTA 签名，原厂 super 也几乎是满的，所以第一次只能直接写分区。
