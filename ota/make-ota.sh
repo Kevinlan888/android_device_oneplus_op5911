@@ -147,7 +147,14 @@ mkdir -p "$OUT/tmp"; export TMPDIR=$OUT/tmp
 # timestamp - otherwise the new target_files would overwrite the old one that
 # --incremental-from is reading (and the incremental would be old-to-old).
 TAG=$INCR
-case $INCR in eng.*) TAG=$INCR-$(date +%m%d%H%M) ;; esac
+case $INCR in eng.*)
+    TAG=$INCR-$(date +%m%d%H%M)
+    echo "   WARNING: built without BUILD_NUMBER ($INCR): the system fingerprint is the same as the" >&2
+    echo "   previous build, so PackageManager keeps its stale package cache after this OTA" >&2
+    echo "   (manifest changes of system apps are ignored). Rebuild with BUILD_NUMBER=..., or" >&2
+    echo "   rm -rf /data/system/package_cache/* on the device and reboot. See BUILD.md section 3." >&2
+    ;;
+esac
 TF=$OUT/target_files-$TAG.zip
 [ "$(readlink -f "$TF")" != "$INCR_FROM" ] || { echo "refusing to overwrite --incremental-from $INCR_FROM" >&2; exit 1; }
 rm -f "$TF"

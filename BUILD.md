@@ -68,12 +68,14 @@ lunch aosp_op5911-bp1a-userdebug
 # 第一次需要的 host 工具
 m fsck.erofs mkfs.erofs otatools
 
-# 系统镜像 + target-files 暂存目录
-m target-files-package
+# 系统镜像 + target-files 暂存目录。每次都带一个新的 BUILD_NUMBER（见下面的说明）
+m target-files-package BUILD_NUMBER=$(date +%Y%m%d%H%M)
 
 # recovery 嫁接需要的内容：AOSP recovery 的 /system，以及 AIDL boot HAL
 m android.hardware.boot-service.default_recovery out/target/product/op5911/ramdisk-recovery.img
 ```
+
+**一定要带 `BUILD_NUMBER`。** 不带时每个构建的版本号都是 `eng.<用户名>`，system/product 的 fingerprint 永远不变。PackageManager 的包解析缓存（`/data/system/package_cache/<fingerprint 的哈希>`）就不会失效，而 erofs 镜像里的文件时间戳又是固定的，结果刷完 OTA 后系统应用的 manifest 还是旧的：新加的权限、组件都不生效（2026-11-10 短信 app 的修复就因此第一次没生效）。已经出现这种情况时，root 下 `rm -rf /data/system/package_cache/*` 再重启即可。
 
 `m target-files-package` 最后会在打包 vendor_boot 时报错（`mkbootimg --vendor_boot not compatible with given header version`）。**这是预期行为**：因为 vendor_boot 是我们自己嫁接的，BoardConfig 没有设置 boot header 版本。报错时暂存目录 `D` 已经生成好了，后面的脚本直接使用它。
 
@@ -110,7 +112,7 @@ device/oneplus/op5911/ota/make-ota.sh --incremental-from $OP5911_OTA_OUT/target_
 
 本地编译没设 `BUILD_NUMBER` 时版本号都是 `eng.<用户名>`，脚本会在文件名后加 `-月日时分`，避免新 target_files 覆盖作为增量源的旧文件。
 
-> `<版本>` 是 `ro.build.version.incremental`。userdebug 构建默认是 `eng.<用户名>`，不同构建的这个值会重复。要发多个版本的增量包，编译时请设置 `BUILD_NUMBER`，例如 `m target-files-package BUILD_NUMBER=20261110`（这个做法本机还没实测）。
+> `<版本>` 是 `ro.build.version.incremental`，也就是编译时的 `BUILD_NUMBER`。没设时是 `eng.<用户名>`，`make-ota.sh` 会给出警告（原因见第 3 节）。
 
 ### 4.1 单独重打 vendor 或 recovery
 
