@@ -9,7 +9,8 @@
 |---|---|
 | system, system_ext, product | built from source by this tree |
 | vendor | stock ColorOS `PGZ110_15.0.0.1101` vendor, patched by `vendor-patch/patch-vendor-image.sh` |
-| boot, vendor_boot, dtbo | stock, left on the phone (stock recovery and fastbootd live in vendor_boot) |
+| vendor_boot | stock, with the AOSP recovery grafted in (`vendor_boot-patch/build-recovery.sh`) |
+| boot, dtbo + 19 firmware partitions (gpueb, lk, tee, md1img, ...) | stock slot-B set (`OP5911_STOCK_FIRMWARE`), shipped in every OTA since 2026-11-10 so both slots run the kernel/firmware that matches the vendor |
 | odm, vendor_dlkm, odm_dlkm, my_* | stock, left on the phone (odm and my_* are verified with the OPLUS AVB key) |
 
 What the vendor patch replaces from the old GSI build (which used bind mounts plus a plat cil hack):
@@ -194,11 +195,12 @@ recovery from the OS honours the active slot and boots our slot-b recovery. Veri
 `phoenix_recovery`, otacert `testkey.x509.pem`. Then `adb reboot sideload` →
 `adb devices` shows `sideload`, gadget enumerates as `18d1:d001`.
 
-**Rule 2 — the project runs on slot b; `fastboot`/fastbootd keep flipping active to a.**
-The super holds the AOSP logical partitions for **slot b only**, so booting slot a
-bootloops. `fastboot reboot recovery`, entering fastbootd, and some bootloader paths all
-reset active→a. The bootloader's immediate `getvar current-slot` after `set_active` is
-**stale** — it reports the old slot until a full reboot. Recovery when stuck:
+**Rule 2 — `fastboot`/fastbootd keep flipping active to a.** `fastboot reboot recovery`,
+entering fastbootd, and some bootloader paths all reset active→a. The bootloader's
+immediate `getvar current-slot` after `set_active` is **stale** — it reports the old slot
+until a full reboot. (Originally the super only held AOSP partitions for slot b, so this
+bootlooped; since 2026-11-10 both slots carry the identical full set — system, stock
+dynamic partitions, kernel and firmware — so either slot boots.) Recovery when stuck:
 
 ```bash
 # device bootloops, then drops into fastboot on its own (or force it with keys)
@@ -206,10 +208,8 @@ fastboot --set-active=b
 fastboot reboot                        # ~26 s back to AOSP on slot b
 ```
 
-`bootctl` is not in the build, so the slot cannot be marked successful from the shell;
-in practice slot b is stable as long as rule 1 is followed (retry-count stays 7 and only
-the recovery path flips the slot). Adding `bootctl` to `PRODUCT_PACKAGES` is a cheap
-future safeguard.
+`bootctl` and `update_engine_client` are in the build: `bootctl get-active-boot-slot` /
+`get-current-slot` show the slots, and an OTA can be applied from the running OS (BUILD.md 5.1).
 
 **Not done yet:** recovery **display** (needs the MTK DRM/panel path wired into minui —
 first version is headless, which is enough for `adb sideload`). `recovery.fstab` still
@@ -277,3 +277,12 @@ Observed on the GSI:
   vendor_boot + /vendor/etc/fstab.mt6895); frees about 5.6 GB of super so a full A/B OTA fits.
 - ~~OTA packages~~ - **done**: full and incremental A/B OTAs carrying all 14 dynamic partitions,
   applied by the ENFORCING recovery, verified both directions. See BUILD.md.
+- ~~Same kernel/firmware on both slots~~ - **done** (2026-11-10): the slots came with different
+  ColorOS versions (22 partitions differed, boot_a = 5.10.236). On slot A our vendor ran on the
+  other version's kernel, gpueb, tee etc.: GPU frames took ~5 s and UFS runtime-PM warned every
+  few seconds. OTAs now carry the 21 stock slot-B kernel/firmware partitions; slot A's originals
+  are backed up in `ace/stock_backup_a_firmware/`.
+- ~~Install updates without recovery~~ - **done**: `update_engine_client` from the running OS
+  (BUILD.md 5.1), ~1 min for an incremental, ~7 min for a full package.
+- Still open: other touch gestures, `nrmodeswitcher`, livedisplay, recovery display, a vendor
+  built from source, and a first build with `BUILD_NUMBER` set.

@@ -249,7 +249,7 @@ adb reboot
 
    开机后设置锁屏时如果被 FRP 拦住，见 README 的 FRP 一节。
 
-之后就可以按 5.1 用 OTA 升级。第一次 OTA 会写入 A 槽，并在 A 槽建出全部 14 个分区。
+之后就可以按 5.1 用 OTA 升级。第一次 OTA 会写入 A 槽：在 A 槽建出全部 14 个动态分区，同时把内核和 21 个固件分区换成和 vendor 同版本的那一套。**第一次请用完整包**（增量包的源 target_files 里还没有固件）。
 
 > `make-super.sh sparse` 可以生成给 `fastboot flash super` 用的稀疏镜像，但这条路径在本机**没有测试过**。
 
