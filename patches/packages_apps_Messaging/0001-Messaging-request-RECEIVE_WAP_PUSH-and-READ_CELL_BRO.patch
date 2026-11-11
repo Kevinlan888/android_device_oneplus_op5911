@@ -1,0 +1,41 @@
+From 005f343f00dc98ac02b0650f8af75678c278764b Mon Sep 17 00:00:00 2001
+From: kevin <kevin@kevinlan.com>
+Date: Tue, 10 Nov 2026 20:51:39 -0800
+Subject: [PATCH] Messaging: request RECEIVE_WAP_PUSH and READ_CELL_BROADCASTS
+
+SmsApplication only reports an app as the default SMS app while all of
+its exclusive appops (READ/WRITE/RECEIVE_SMS, RECEIVE_WAP_PUSH, SEND_SMS,
+READ_CELL_BROADCASTS) are allowed. On Android 15 those appops follow the
+permission grants, and the SMS role only grants permissions the app
+requests. Messaging requested neither of these two, so
+getDefaultSmsPackage() returned null to it, isDefaultSmsApp() was false
+and BugleNotifications.shouldNotify() never posted a message
+notification ("Notifications disabled").
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Change-Id: I71da4ce677f8c2b0153f9cffff750427b7618e2e
+---
+ AndroidManifest.xml | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index fffcdab..853ee5e 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -27,6 +27,13 @@
+     <uses-permission android:name="android.permission.WRITE_SMS"/>
+     <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+     <uses-permission android:name="android.permission.RECEIVE_MMS"/>
++    <!-- SmsApplication only reports us as the default SMS app while ALL of its exclusive appops
++         (read/write/receive SMS, RECEIVE_WAP_PUSH, send SMS, READ_CELL_BROADCASTS) are allowed.
++         Those appops follow the permission grants, and the SMS role only grants permissions we
++         request. Without these two, getDefaultSmsPackage() returns null to us and shouldNotify()
++         never posts message notifications. -->
++    <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH"/>
++    <uses-permission android:name="android.permission.READ_CELL_BROADCASTS"/>
+     <uses-permission android:name="android.permission.SEND_SMS"/>
+     <!-- Application needs access to MMS network -->
+     <uses-permission android:name="android.permission.INTERNET" />
+-- 
+2.43.0
+

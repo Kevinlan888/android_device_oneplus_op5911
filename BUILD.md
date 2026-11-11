@@ -42,6 +42,7 @@ out/target/product/op5911/obj/PACKAGING/target_files_intermediates/aosp_op5911-t
 
 - 源码：AOSP 15（`android-15.0.0_r36`），设备树放在 `device/oneplus/op5911`，预编译文件放在 `vendor/oneplus/op5911`。
 - lunch 目标：`aosp_op5911-bp1a-userdebug`。
+- 设备树以外的源码补丁在 `patches/`，`repo sync` 之后要先打上（见 `patches/README.md`）。目前只有一个：AOSP 短信不补这个就永远不弹通知。
 
 ### 2.2 原厂输入文件
 

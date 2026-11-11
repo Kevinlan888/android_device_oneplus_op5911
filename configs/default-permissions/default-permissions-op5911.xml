@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<!-- AOSP DeskClock never gets POST_NOTIFICATIONS by default, so NotificationManager blocks
+     its alarm notification and full-screen alarm (the alarm only plays sound). -->
+<exceptions>
+    <exception package="com.android.deskclock">
+        <permission name="android.permission.POST_NOTIFICATIONS" fixed="false" />
+    </exception>
+</exceptions>

@@ -63,6 +63,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     OplusDoze
 
+# Doze exemptions + default grants for the AOSP SMS and clock apps (see the xml comments)
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/configs/sysconfig/op5911-power-whitelist.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/sysconfig/op5911-power-whitelist.xml \
+    $(DEVICE_PATH)/configs/default-permissions/default-permissions-op5911.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/default-permissions/default-permissions-op5911.xml
+
 # IMS (MediaTek, TrebleDroid ims-mtk-u)
 PRODUCT_PACKAGES += \
     MtkIms \

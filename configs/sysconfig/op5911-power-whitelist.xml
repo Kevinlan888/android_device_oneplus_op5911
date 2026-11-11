@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<!-- Doze / background-start exemptions for the stock AOSP apps (tested 2026-11-10):
+     - Messaging hands an incoming SMS to a JobScheduler job before notifying; in deep idle
+       that job is deferred until the device wakes, so the SMS never lights the screen.
+     - DeskClock delivers the alarm with PendingIntent.getService(); once the app's uid is
+       idle the background service start is refused and the alarm never fires.
+     Allowlisted apps are exempt from both. -->
+<config>
+    <allow-in-power-save package="com.android.messaging" />
+    <allow-in-power-save package="com.android.deskclock" />
+</config>
