@@ -28,7 +28,7 @@ while [ $# -gt 0 ]; do
 done
 
 [ -f "$HERE/local.env" ] && . "$HERE/local.env"
-for v in OP5911_STOCK_IMAGES OP5911_STOCK_VENDOR_BOOT OP5911_STOCK_BOOT OP5911_STOCK_VBMETA OP5911_OTA_OUT; do
+for v in OP5911_STOCK_IMAGES OP5911_STOCK_FIRMWARE OP5911_STOCK_VENDOR_BOOT OP5911_STOCK_BOOT OP5911_STOCK_VBMETA OP5911_OTA_OUT; do
     [ -n "${!v}" ] || { echo "$v not set (ota/local.env)" >&2; exit 1; }
 done
 
@@ -43,6 +43,11 @@ OUT=$OP5911_OTA_OUT
 SPL=${OP5911_SPL:-2025-07-01}
 STOCK_PARTS="odm vendor_dlkm odm_dlkm my_product my_engineering my_company my_carrier my_region my_heytap my_manifest"
 DYN="system system_ext product vendor $STOCK_PARTS"
+# Per-slot kernel + firmware. The OTA must write the SAME set the stock vendor
+# came from (slot B dump, PGZ110_15.0.0.1101): a slot left with another ColorOS
+# version's boot/gpueb/tee/... boots, but runs with a GPU taking seconds per
+# frame and UFS runtime-PM WARNs (seen on slot A, 2026-11-10).
+FW_PARTS="boot dtbo gpueb lk tee gz scp sspm mcupm spmfw dpm vcp ccu apusys audio_dsp mvpu_algo pi_img md1img mcf_ota vbmeta_system vbmeta_vendor"
 SUPER_GROUP=12343836672
 [ -d "$D/META" ] || { echo "no target-files staging at $D - run: m target-files-package otatools" >&2; exit 1; }
 mkdir -p "$OUT"
@@ -103,13 +108,17 @@ echo "=== [6/8] assemble the payload partition set"
 cp -f "$IM/vendor.img" "$D/IMAGES/vendor.img"
 for p in $STOCK_PARTS; do cp -f "$OP5911_STOCK_IMAGES/$p.img" "$D/IMAGES/$p.img"; rm -f "$D/IMAGES/$p.map"; done
 cp -f "$IM/vendor_boot-recovery.img" "$D/IMAGES/vendor_boot.img"
+( cd "$OP5911_STOCK_FIRMWARE" && sha256sum --quiet -c SHA256SUMS ) || { echo "stock firmware sha256 mismatch" >&2; exit 1; }
+cmp -s "$OP5911_STOCK_FIRMWARE/boot.img" "$OP5911_STOCK_BOOT" \
+    || { echo "firmware boot.img != OP5911_STOCK_BOOT (kernel must match the vendor_boot modules)" >&2; exit 1; }
+for p in $FW_PARTS; do cp -f "$OP5911_STOCK_FIRMWARE/$p.img" "$D/IMAGES/$p.img"; done
 python3 external/avb/avbtool.py info_image --image "$OP5911_STOCK_VBMETA" \
     | grep -q "Public key (sha1):        1a130f9ac8720d5c66e8b62c92505173633166f6" \
     || { echo "vbmeta is not stock-signed" >&2; exit 1; }
 python3 external/avb/avbtool.py info_image --image "$OP5911_STOCK_VBMETA" | grep -qE '^Flags: +3$' \
     || { echo "vbmeta flags != 3" >&2; exit 1; }
 cp -f "$OP5911_STOCK_VBMETA" "$D/IMAGES/vbmeta.img"
-for p in $STOCK_PARTS vbmeta vendor_boot; do
+for p in $STOCK_PARTS $FW_PARTS vbmeta vendor_boot; do
     grep -qx "$p" "$D/META/ab_partitions.txt" || echo "$p" >> "$D/META/ab_partitions.txt"
 done
 for f in "$D/META/dynamic_partitions_info.txt" "$MI"; do

@@ -21,7 +21,8 @@ out/target/product/op5911/obj/PACKAGING/target_files_intermediates/aosp_op5911-t
 | odm、vendor_dlkm、odm_dlkm | 原厂镜像原样 | 是 |
 | my_product、my_engineering、my_company、my_carrier、my_region、my_heytap、my_manifest | 原厂镜像原样 | 是 |
 | my_stock、my_preload、my_bigball | **不再使用**，已从两份 fstab 里删除 | 否 |
-| boot、dtbo 及其余物理分区 | 原厂，留在手机上不动 | 否 |
+| boot、dtbo、gpueb、lk、tee、gz、scp、sspm、mcupm、spmfw、dpm、vcp、ccu、apusys、audio_dsp、mvpu_algo、pi_img、md1img、mcf_ota、vbmeta_system、vbmeta_vendor | 原厂 B 槽原样（和 vendor 同一版本 PGZ110_15.0.0.1101） | 是（2026-11-10 起） |
+| preloader、nvram/nvdata、protect、persist 等不分 A/B 的分区 | 原厂，留在手机上不动 | 否 |
 
 ### 1.2 必须知道的几条规则
 
@@ -32,7 +33,8 @@ out/target/product/op5911/obj/PACKAGING/target_files_intermediates/aosp_op5911-t
 3. **recovery 的 fstab 里不能有 `formattable`。** 原厂 fstab 把 `/cache` 指向 `oplusreserve2`，`nvdata`、`nvcfg`、`protect1`、`protect2`（IMEI、射频校准）也都带 `formattable`。AOSP recovery 挂载失败时会直接格式化这些分区：2026-11-10 的一次测试就这样把 oplusreserve2 格式化了。`vendor_boot-patch/sanitize-recovery-fstab.sh` 负责去掉这些条目，`make-ota.sh` 出包前也会再检查一次。
 4. **进 rec 只能用 `adb reboot recovery` 或 `adb reboot sideload`，不要用 `fastboot reboot recovery`。** 这台机器的 bootloader 在 fastboot 下进 recovery 时固定走 A 槽的 vendor_boot，还会把活动槽改成 A。
 5. **安全补丁级别（SPL）不能回退。** 系统一旦用较新的 SPL 开过机，KeyMint 就会把密钥升级到这个级别，之后再用旧 SPL 的系统开机，/data 解不开。所有构建都固定把 SPL 写成 `2025-07-01`（`OP5911_SPL` 可以改，但只能往后调）。
-6. **改 `device.mk`、`BoardConfig.mk` 或任何 `.bp`/`.mk` 后，下一次 `m` 会触发 soong 重新分析，在这台机器上要约 1 小时。** 改动尽量攒在一起。本文第 4 节以后的步骤全部只用 host 工具，不会触发重新分析。
+6. **内核和固件必须和 vendor 同一版本。** A、B 两个槽原来装的是不同版本的 ColorOS，有 22 个分区不一样。早先的 OTA 只写系统和 vendor，落到 A 槽时内核（5.10.236）和 gpueb、tee 等固件还是 A 槽的旧版本，配上 B 槽版本的 vendor 和内核模块：能开机，但 GPU 每帧要几秒、整机很卡，内核每隔几秒打一次 UFS runtime-suspend 的 WARN。现在 `make-ota.sh` 会把 B 槽的 21 个内核/固件分区一起打进包里，不管落到哪个槽都是同一套。
+7. **改 `device.mk`、`BoardConfig.mk` 或任何 `.bp`/`.mk` 后，下一次 `m` 会触发 soong 重新分析，在这台机器上要约 1 小时。** 改动尽量攒在一起。本文第 4 节以后的步骤全部只用 host 工具，不会触发重新分析。
 
 ## 2. 准备工作
 
@@ -50,6 +52,7 @@ out/target/product/op5911/obj/PACKAGING/target_files_intermediates/aosp_op5911-t
 | `OP5911_STOCK_IMAGES` | 原厂动态分区镜像目录：`vendor.img`、`odm.img`、`vendor_dlkm.img`、`odm_dlkm.img`、各个 `my_*.img` | 在原厂系统或 root rec 里，从 `/dev/block/mapper/<分区>_b` dd 出来，并校验 sha256 |
 | `OP5911_STOCK_VENDOR_BOOT` | 原厂 `vendor_boot_b.img` | `dd if=/dev/block/by-name/vendor_boot_b` |
 | `OP5911_STOCK_BOOT` | 原厂 `boot_b.img` | `dd if=/dev/block/by-name/boot_b` |
+| `OP5911_STOCK_FIRMWARE` | 原厂 B 槽内核和固件：`boot dtbo gpueb lk tee gz scp sspm mcupm spmfw dpm vcp ccu apusys audio_dsp mvpu_algo pi_img md1img mcf_ota vbmeta_system vbmeta_vendor` 各一个 `.img`，外加 `SHA256SUMS` | root 下逐个 `dd if=/dev/block/by-name/<分区>_b`，对照手机上的 sha1 校验，再生成 `SHA256SUMS`。其中 `boot.img` 必须和 `OP5911_STOCK_BOOT` 完全一致（脚本会检查） |
 | `OP5911_STOCK_VBMETA` | 原厂签名、flags=3 的 vbmeta | 原厂 `vbmeta_b.img` 用 `fastboot --disable-verity --disable-verification flash vbmeta_b` 刷入后再 dd 出来；或者直接把原厂镜像偏移 120 处 4 字节大端 flags 改成 3 |
 | `OP5911_OTA_OUT` | OTA 和 target-files 存档的输出目录 | 至少留 10 GB。`/tmp` 太小，`ota_from_target_files` 会写满 |
 
@@ -91,7 +94,7 @@ device/oneplus/op5911/ota/make-ota.sh --incremental-from $OP5911_OTA_OUT/target_
 3. **重建 system、system_ext、product 镜像**（`add_img_to_target_files`），让镜像里的属性和上一步一致。
 4. **打 vendor 镜像**：`vendor-patch/patch-vendor-image.sh`。补丁内容见 README，此外 fstab 里的 `my_stock`、`my_preload`、`my_bigball` 会被删掉。
 5. **打 recovery（vendor_boot）**：按 OTA 工具同样的规则计算这个版本的指纹，写进 `recovery-build-<版本>.props`，再交给 `build-recovery.sh`。rec 会报告这个版本的指纹、版本号、编译时间和 SPL，否则增量包会因为「源版本不符」被拒。
-6. **组装 payload**：14 个动态分区，加上 vbmeta（会校验确实是原厂签名且 flags=3）和 vendor_boot。同时检查两个槽加起来放得进 super（每槽约 3.74 GB，super 组上限 12.34 GB）。
+6. **组装 payload**：14 个动态分区，加上 vbmeta（会校验确实是原厂签名且 flags=3）、vendor_boot，以及 `OP5911_STOCK_FIRMWARE` 里的 21 个内核/固件分区（先按 `SHA256SUMS` 校验，并确认 `boot.img` 就是 recovery 嫁接用的那个内核）。同时检查两个槽加起来放得进 super（每槽约 3.74 GB，super 组上限 12.34 GB）。
 7. **安全检查**：从将要发出去的 vendor_boot 里解出 recovery.fstab，确认没有 `formattable` 和 `/cache`；同时确认 rec 的指纹和这次构建一致。
 8. **出包**：`ota_from_target_files`，并核对包里 `post-build` 与 rec 的指纹一致。
 
