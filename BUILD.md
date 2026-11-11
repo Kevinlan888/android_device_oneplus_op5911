@@ -262,6 +262,10 @@ adb reboot
 | 侧载后 `status: 1` | 系统里 root 读 `/data/misc/recovery/last_log` | `Package is for source build …`：rec 的版本身份和增量包的源版本不一致；`failed to set up expected mounts`：rec fstab 有问题 |
 | 侧载卡在 47% | 调试版 rec，看 update_engine 的 stderr | servicemanager 或 boot HAL 没起来 |
 | 增量包提示源分区哈希不对 | `last_log` | 手机当前槽的内容和 `--incremental-from` 用的 target-files 不一致。注意 vendor_boot 也在比对范围内 |
+| 刷完换到另一个槽后整机很卡 | `dumpsys gfxinfo com.android.launcher3`：`50th gpu percentile` 达到几秒；`dmesg` 里每隔几秒一条 `ufs_mtk_pltfrm_runtime_suspend` 的 WARN | 这个槽的内核和固件不是 vendor 那个版本（第 1.2 节第 6 条）。用带固件的完整包刷一次；对比两槽：root 下 `sha1sum /dev/block/by-name/<分区>_a` 和 `_b` |
+| 刷完 OTA 后，系统应用的改动（新权限、新组件）没生效 | `dumpsys package <包名>` 看不到新声明的权限，但手机上的 APK 里已经有 | 没带 `BUILD_NUMBER` 编译，包解析缓存没失效（第 3 节）。root 下 `rm -rf /data/system/package_cache/*` 再重启 |
+| 短信不弹通知 | `setprop log.tag.MessagingAppNotif VERBOSE` 后看 logcat，出现 `Notifications disabled` | 没打 `patches/` 里的短信补丁，短信 app 不被当作默认短信应用 |
+| 闹钟只响不亮屏，或者干脆不响 | `dumpsys notification` 里时钟是 `importance=NONE`；logcat 里 `Background start not allowed ... deskclock` | 没有通知权限或不在 Doze 白名单：检查 `configs/default-permissions` 和 `configs/sysconfig` 是否进了 product |
 
 rec 里每次启动都会把日志留在 pstore 中；回到系统后，`/data/misc/recovery/` 下的 `last_log*`、`last_kmsg*` 是之前几次 rec 的记录。
 
