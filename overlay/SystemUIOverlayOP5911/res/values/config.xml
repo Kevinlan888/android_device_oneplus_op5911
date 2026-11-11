@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- AOD: use the display DOZE power state (panel low-power mode). -->
+    <bool name="doze_display_state_supported">true</bool>
+
+    <!-- DOZE_SUSPEND is NOT supported: HWC accepts it but the panel goes
+         black (tested 2026-11-10). Keep the AOSP default (false). -->
+    <bool name="doze_suspend_display_state_supported">false</bool>
+</resources>

@@ -1,0 +1,6 @@
+# OP5911 system_ext properties
+
+# MediaTek IMS: let the IMS stack bind com.mediatek.ims
+persist.dbg.volte_avail_ovr=1
+persist.dbg.vt_avail_ovr=0
+persist.dbg.wfc_avail_ovr=0

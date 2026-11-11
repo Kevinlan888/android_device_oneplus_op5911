@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+
+     Device overrides merged on top of the AOSP per-carrier configs.
+     Enables VoLTE through the MediaTek IMS service for the Chinese carriers.
+-->
+<carrier_config_list>
+    <!-- Global fallback: this device's SIMs often stay carrierId=-1 (CarrierResolver
+         has no match), so the carrier config is fetched before mcc/mnc are known and
+         none of the filtered bundles below apply. An unfiltered bundle always matches
+         (checkFilters passes when there are no attributes) and enables VoLTE via the
+         MTK IMS stack regardless. Harmless where the network has no IMS: it just won't
+         register. The per-carrier bundles below still win when they do match. -->
+    <carrier_config>
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <!-- China Telecom -->
+    <carrier_config mcc="460" mnc="03">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <carrier_config mcc="460" mnc="05">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <carrier_config mcc="460" mnc="11">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <carrier_config mcc="460" mnc="12">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <!-- China Mobile -->
+    <carrier_config mcc="460" mnc="00">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <carrier_config mcc="460" mnc="02">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <carrier_config mcc="460" mnc="04">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <carrier_config mcc="460" mnc="07">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <carrier_config mcc="460" mnc="08">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <!-- China Unicom -->
+    <carrier_config mcc="460" mnc="01">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <carrier_config mcc="460" mnc="06">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+    <carrier_config mcc="460" mnc="09">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="editable_enhanced_4g_lte_bool" value="true" />
+        <boolean name="hide_enhanced_4g_lte_bool" value="false" />
+        <boolean name="carrier_vt_available_bool" value="false" />
+        <boolean name="carrier_wfc_ims_available_bool" value="false" />
+        <string name="config_ims_mmtel_package_override_string">com.mediatek.ims</string>
+    </carrier_config>
+</carrier_config_list>

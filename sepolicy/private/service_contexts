@@ -1,0 +1,5 @@
+# Registered by com.mediatek.ims (runs as radio). Same labels as the stock
+# system_ext_service_contexts; without them ImsApp crashes in addService().
+mtkIms    u:object_r:radio_service:s0
+mwis      u:object_r:radio_service:s0
+wfo       u:object_r:radio_service:s0

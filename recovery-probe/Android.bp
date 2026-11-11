@@ -1,0 +1,7 @@
+cc_binary {
+    name: "op5911-boot-hal-probe",
+    recovery: true,
+    srcs: ["boot_hal_probe.cpp"],
+    shared_libs: ["libbinder_ndk", "android.hardware.boot-V1-ndk"],
+    cflags: ["-Wall", "-Werror"],
+}

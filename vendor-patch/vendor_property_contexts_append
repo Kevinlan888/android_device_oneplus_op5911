@@ -1,0 +1,7 @@
+
+# OP5911: ro.oplus.* backlight props polled by mtk_hal_pq several times per
+# second. On ColorOS they are labelled by the oplus system policy; on Lineage
+# they fall back to default_prop, which mtk_hal_pq may not read, so libc logs
+# "Access denied finding property" on every poll. Give them the PQ ro label.
+ro.oplus.backlight.                u:object_r:vendor_mtk_pq_ro_prop:s0
+ro.oplus.bl.                       u:object_r:vendor_mtk_pq_ro_prop:s0

@@ -1,0 +1,34 @@
+# OP5911 vendor-side fixes (installed into the patched vendor image).
+#
+# /vendor/etc/init is parsed before /odm/etc/init, so this definition of
+# fps_hal wins over the stock one in
+# /odm/etc/init/vendor.oplus.hardware.biometrics.fingerprint@2.1-service.rc
+# (init logs "ignored duplicate definition" for the odm copy).
+# The binary is the stock one with three null checks on the Ex callback
+# (0x102d0, 0x106a4, 0x1072c), which AOSP never registers.
+service fps_hal /vendor/bin/hw/vendor.oplus.hardware.biometrics.fingerprint@2.1-service
+    class late_start
+    user system
+    group system input uhid
+
+on post-fs
+    # Re-enable the LAUNCH / ACT_SWITCH / PROCESS_CREATE scenarios that
+    # ColorOS comments out, plus an INTERACTION touch boost.
+    mount none /vendor/etc/op5911/powerscntbl.xml /odm/etc/powerhal/powerscntbl.xml bind
+
+on boot
+    setprop persist.vendor.vilte_support 0
+
+# Double-tap-to-wake: the panel emits KEY_F4 (scancode 62) on a double tap
+# while the screen is off; /vendor/usr/keylayout/touchpanel.kl maps 62 -> WAKEUP.
+# The gesture only fires while /proc/touchpanel/double_tap_enable is armed, so arm
+# it once the touch driver is up. A persist default in build.prop does not survive
+# (no property_contexts type for persist.op5911.*), so arm unconditionally here;
+# the toggle triggers below still work within a running session.
+on property:sys.boot_completed=1
+    write /proc/touchpanel/double_tap_enable 1
+
+on property:persist.op5911.dt2w=1
+    write /proc/touchpanel/double_tap_enable 1
+on property:persist.op5911.dt2w=0
+    write /proc/touchpanel/double_tap_enable 0

@@ -1,0 +1,4 @@
+runtime_resource_overlay {
+    name: "CarrierConfigOverlayOP5911",
+    product_specific: true,
+}

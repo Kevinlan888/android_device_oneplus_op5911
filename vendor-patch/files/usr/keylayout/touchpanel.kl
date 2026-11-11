@@ -1,0 +1,6 @@
+# OnePlus Ace (OP5911) touchpanel gestures.
+# With /proc/touchpanel/double_tap_enable armed, the panel reports a double
+# tap on a screen-off as KEY_F4 (scancode 62). Map it to WAKEUP so a double
+# tap wakes the device (double-tap-to-wake). Other scancodes are left to the
+# generic key map.
+key 62    WAKEUP

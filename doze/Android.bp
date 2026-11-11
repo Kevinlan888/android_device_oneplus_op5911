@@ -1,0 +1,15 @@
+//
+// Copyright (C) 2026 The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+// Bridges the oplus pick-up sensor (vendor type 65611, not the standard
+// TYPE_PICK_UP_GESTURE that SystemUI looks for) to an ambient display pulse.
+android_app {
+    name: "OplusDoze",
+    srcs: ["src/**/*.java"],
+    certificate: "platform",
+    platform_apis: true,
+    system_ext_specific: true,
+    privileged: true,
+}

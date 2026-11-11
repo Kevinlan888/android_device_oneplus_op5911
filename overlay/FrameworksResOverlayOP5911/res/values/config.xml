@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources>
+    <!-- Fingerprint: HIDL oplus fingerprint@2.1 HAL, sensor id 0,
+         modality 2 (fingerprint), strength 15 (BIOMETRIC_STRONG) -->
+    <string-array name="config_biometric_sensors" translatable="false">
+        <item>0:2:15</item>
+    </string-array>
+
+    <!-- Lineage 22 only wakes the screen on a short power press when this is true -->
+    <bool name="config_supportLongPressPowerWhenNonInteractive">true</bool>
+
+    <!-- MediaTek IMS (com.mediatek.ims) -->
+    <bool name="config_device_volte_available">true</bool>
+    <bool name="config_carrier_volte_available">true</bool>
+    <bool name="config_device_vt_available">false</bool>
+    <bool name="config_device_wfc_ims_available">false</bool>
+    <bool name="config_dynamic_bind_ims">true</bool>
+    <string name="config_ims_package" translatable="false">com.mediatek.ims</string>
+    <string name="config_ims_mmtel_package" translatable="false">com.mediatek.ims</string>
+
+    <!-- ===== From LineageOS hardware/mediatek (Mssi*Overlay) and mt6895-common ===== -->
+
+    <!-- 5G: MT6895 modem supports SA and NSA. Without these, Settings hides the
+         5G preferred network types and SA/NSA reporting is disabled. -->
+    <bool name="config_telephony5gStandalone">true</bool>
+    <bool name="config_telephony5gNonStandalone">true</bool>
+
+    <!-- MediaTek TCP buffer sizes per RAT -->
+    <string-array name="config_network_type_tcp_buffers" translatable="false">
+        <item>"GPRS:4092,8760,48000,4096,8760,48000"</item>
+        <item>"EDGE:4093,26280,70800,4096,16384,70800"</item>
+        <item>"UMTS:58254,349525,1048576,58254,349525,1048576"</item>
+        <item>"CDMA:4094,87380,262144,4096,16384,262144"</item>
+        <item>"1xRTT:16384,32768,131072,4096,16384,102400"</item>
+        <item>"EvDo_0:4094,87380,262144,4096,16384,262144"</item>
+        <item>"EvDo_A:4094,87380,262144,4096,16384,262144"</item>
+        <item>"HSDPA:61167,367002,1101005,8738,52429,262114"</item>
+        <item>"HSUPA:40778,244668,734003,16777,100663,301990"</item>
+        <item>"HSPA:40778,244668,734003,16777,100663,301990"</item>
+        <item>"EvDo_B:4094,87380,262144,4096,16384,262144"</item>
+        <item>"eHRPD:131072,262144,1048576,4096,16384,524288"</item>
+        <item>"iDEN:4094,87380,262144,4096,16384,262144"</item>
+        <item>"LTE:2097152,4194304,8388608,262144,524288,2097152"</item>
+        <item>"HSPA+:122334,734003,2202010,32040,192239,576717"</item>
+        <item>"GSM:4092,8760,48000,4096,8760,48000"</item>
+        <item>"TD_SCDMA:58254,349525,1048576,58254,349525,1048576"</item>
+        <item>"LTE_CA:4096,6291456,12582912,4096,1048576,2097152"</item>
+        <item>"NR_NSA:2097152,6291456,16777216,512000,2097152,8388608"</item>
+        <item>"NR_NSA_MMWAVE:2097152,6291456,16777216,512000,2097152,8388608"</item>
+        <item>"NR_SA:2097152,6291456,16777216,512000,2097152,8388608"</item>
+        <item>"NR_SA_MMWAVE:2097152,6291456,16777216,512000,2097152,8388608"</item>
+    </string-array>
+
+    <!-- Dual SIM tray is hot-swappable -->
+    <bool name="config_hotswapCapable">true</bool>
+    <bool name="config_switch_phone_on_voice_reg_state_change">false</bool>
+
+    <!-- Display: panel modes are 30/45/48/50/60/90/120 Hz. The stock vendor
+         overlay caps the default peak at 90; ColorOS defaults to 120. -->
+    <integer name="config_defaultPeakRefreshRate">120</integer>
+    <integer name="config_defaultRefreshRate">0</integer>
+
+    <bool name="config_unplugTurnsOnScreen">true</bool>
+    <bool name="config_enableBurnInProtection">true</bool>
+
+    <!-- ===== Doze ===== -->
+
+    <!-- DeviceIdle (light + deep doze). Off by default in AOSP. -->
+    <bool name="config_enableAutoPowerModes">true</bool>
+
+    <!-- Ambient display / AOD: the MTK display stack handles the panel's
+         low-power mode (kernel: "[DISP]enter AOD"). Offered, but off until
+         the user turns it on. -->
+    <bool name="config_dozeAlwaysOnDisplayAvailable">true</bool>
+    <bool name="config_dozeAlwaysOnEnabled">false</bool>
+
+    <!-- "Lift to check phone": shows the Settings toggle. The sensor is the
+         oplus pickup_detect sensor, bridged to a pulse by OplusDoze since
+         SystemUI only knows TYPE_PICK_UP_GESTURE. -->
+    <bool name="config_dozePulsePickup">true</bool>
+
+    <!-- Pulse brightness (integer 1-255). A pulse puts the display in STATE_ON
+         at this level; AOD itself (STATE_DOZE) uses the panel's own low-power
+         brightness and ignores it. The default 5 was barely visible, 25 and 40
+         too bright; 15 picked on device (2026-11-10). -->
+    <integer name="config_screenBrightnessDoze">15</integer>
+</resources>
