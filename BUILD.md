@@ -81,6 +81,19 @@ m android.hardware.boot-service.default_recovery out/target/product/op5911/ramdi
 
 ## 4. 生成 OTA 卡刷包
 
+从源码/资源改动到 OTA 一次完成：
+
+```bash
+device/oneplus/op5911/ota/build-ota.sh
+# 同时生成增量包（源 target_files 必须是手机当前版本的）：
+device/oneplus/op5911/ota/build-ota.sh \
+  --incremental-from "$OP5911_OTA_OUT/target_files-<旧版本>.zip"
+```
+
+脚本自动生成新的 `BUILD_NUMBER`，依次刷新 host 工具、target-files 和 recovery 前置目标，再调用 `make-ota.sh`。`target-files-package` 已知的 vendor_boot 报错会被识别并继续；如果暂存树没有更新，或其中的 overlay APK 与 `PRODUCT_OUT` 不一致，脚本会停止，避免把旧内容打进包。构建日志在 `$OP5911_OTA_OUT/build-<版本>.log`。需要固定版本号时加 `--build-number <值>`。
+
+手动分步打包（target-files 和 recovery 前置目标已经就绪时）：
+
 ```bash
 device/oneplus/op5911/ota/make-ota.sh
 # 同时生成从某个旧版本出发的增量包：
@@ -273,6 +286,7 @@ rec 里每次启动都会把日志留在 pstore 中；回到系统后，`/data/m
 
 | 路径 | 作用 |
 |---|---|
+| `ota/build-ota.sh` | 一键从源码到 OTA（第 4 节） |
 | `ota/make-ota.sh` | 出 OTA 整包和增量包（第 4 节） |
 | `ota/make-super.sh` | 首次安装用的完整 super 镜像 |
 | `ota/local.env` | 本机原厂镜像的路径 |
