@@ -59,6 +59,20 @@ out/target/product/op5911/obj/PACKAGING/target_files_intermediates/aosp_op5911-t
 
 > 在别的机器上编译时，只需改 `ota/local.env` 里的路径。
 
+### 2.3 可选：GApps（MindTheGapps）
+
+system、system_ext、product 都是 erofs（只读），所以 MindTheGapps 的卡刷 zip 在 rec 里刷不进去，只能编进镜像。
+
+- 位置：`vendor/gapps/`，内容是 `MindTheGapps-15.0.0-arm64-20260915_032013.zip` 里的 `product/` 和 `system_ext/` 两个目录（没有 VelvetTitan，那个只给 tangorpro 平板用），外加 `Android.bp` 和 `gapps-vendor.mk`。
+- `device.mk` 用 `inherit-product-if-exists` 引入它：**目录不存在就是纯 AOSP，编译不报错**；目录存在时可以用 `WITH_GAPPS=false m ...` 临时关掉。
+- APK 用 `android_app_import` + `preprocessed: true` 原样拷贝，不重签、不 dexpreopt，所以 Google 的 v2/v3 签名保持有效。这版 zip 里的 APK 全部满足 preprocessed 的检查（4 字节对齐、so 和 priv-app 的 dex 都不压缩），所以**不要**加 `skip_preprocessed_apk_checks`：APK 没有问题时加了反而报错。换新版 zip 后可以用下面的命令先检查（要在 bash 里跑，zsh 不会拆分 `$priv`，会得到假的失败）：
+  ```bash
+  bash -c 'for f in $(find vendor/gapps -name "*.apk"); do p=""; case $f in *priv-app*) p="--privileged --uncompress-priv-app-dex";; esac; python3 build/soong/scripts/check_prebuilt_presigned_apk.py --zipalign out/host/linux-x86/bin/zipalign $p --preprocessed $f /dev/null || echo "需要 skip: $f"; done'
+  ```
+- SetupWizard 会覆盖掉 `Provision`，Velvet 会覆盖掉 `QuickSearchBox`。
+- 换新版 zip：把 `product/` 和 `system_ext/` 替换掉；增删了 APK 的话，要同步修改 `Android.bp` 和 `gapps-vendor.mk` 里的列表。
+- 带 GApps 和不带 GApps 的版本之间切换时，`/data` 里会留下 GMS 的数据。从不带 GApps 升到带 GApps 一般可以直接升级（记得带 `BUILD_NUMBER`），反方向建议清空数据。
+
 ## 3. 编译系统镜像
 
 ```bash

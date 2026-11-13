@@ -84,6 +84,12 @@ include $(DEVICE_PATH)/configs/vendor_logtag.mk
 # Inherit the proprietary side (currently only the patched vendor image)
 $(call inherit-product-if-exists, vendor/oneplus/op5911/op5911-vendor.mk)
 
+# Optional GApps (MindTheGapps, see vendor/gapps/gapps-vendor.mk): skipped when
+# vendor/gapps does not exist or when building with WITH_GAPPS=false.
+ifneq ($(WITH_GAPPS),false)
+$(call inherit-product-if-exists, vendor/gapps/gapps-vendor.mk)
+endif
+
 # Debug: pre-authorize this PC's adb key (userdebug only), so adb works on the
 # first boot after the userdata wipe, even if SystemUI never comes up.
 # Replace configs/adb_keys with your own ~/.android/adbkey.pub.
