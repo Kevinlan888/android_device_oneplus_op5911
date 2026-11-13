@@ -64,6 +64,37 @@
     <integer name="config_defaultPeakRefreshRate">120</integer>
     <integer name="config_defaultRefreshRate">0</integer>
 
+    <!-- The stock ODM overlay advertises HWC color-mode IDs in this array, but
+         Settings only knows the four standard ColorDisplayManager modes. Use
+         only the standard values so every item has a name and is selectable. -->
+    <integer-array name="config_availableColorModes">
+        <item>0</item> <!-- COLOR_MODE_NATURAL -->
+        <item>1</item> <!-- COLOR_MODE_BOOSTED -->
+        <item>2</item> <!-- COLOR_MODE_SATURATED -->
+        <item>3</item> <!-- COLOR_MODE_AUTOMATIC -->
+    </integer-array>
+
+    <!-- The panel exposes HWC modes NATIVE (0), SRGB (7) and DISPLAY_P3 (9).
+         Leave the first three modes under display color management; SATURATED
+         already switches SurfaceFlinger to unmanaged/native. AUTOMATIC forces
+         Display P3, matching the mapping used by AOSP's Pixel overlays. -->
+    <integer-array name="config_displayCompositionColorModes">
+        <item>0</item> <!-- COLOR_MODE_NATURAL -->
+        <item>1</item> <!-- COLOR_MODE_BOOSTED -->
+        <item>2</item> <!-- COLOR_MODE_SATURATED -->
+        <item>3</item> <!-- COLOR_MODE_AUTOMATIC -->
+    </integer-array>
+    <integer-array name="config_displayCompositionColorSpaces">
+        <item>0</item> <!-- COLOR_MODE_DEFAULT -->
+        <item>0</item> <!-- COLOR_MODE_DEFAULT -->
+        <item>0</item> <!-- COLOR_MODE_DEFAULT -->
+        <item>9</item> <!-- COLOR_MODE_DISPLAY_P3 -->
+    </integer-array>
+
+    <!-- The HWC supports setColorTransform. This also makes Night display and
+         Reduce bright colors available through their default resource aliases. -->
+    <bool name="config_setColorTransformAccelerated">true</bool>
+
     <bool name="config_unplugTurnsOnScreen">true</bool>
     <bool name="config_enableBurnInProtection">true</bool>
 
