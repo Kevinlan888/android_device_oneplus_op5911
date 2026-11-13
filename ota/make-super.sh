@@ -1,5 +1,7 @@
 #!/bin/bash
-# Build a complete super image for a FIRST install (slot b only, 14 partitions):
+# Build a complete super image for RESCUE ONLY (slot b only, 14 partitions).
+# Normal first install uses a full-OTA sideload; this 12.3 GB raw image is NOT a
+# release artifact and must not be shipped to users.
 # our system/system_ext/product/vendor + stock odm/vendor_dlkm/odm_dlkm/my_*.
 # Layout = stock super geometry (3 metadata slots, Virtual A/B, 512K alignment).
 # Takes the images from the target-files staging that ota/make-ota.sh prepared,

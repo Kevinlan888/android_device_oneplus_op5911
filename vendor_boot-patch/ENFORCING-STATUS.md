@@ -1,4 +1,12 @@
-# Recovery Enforcing investigation — 2026-11-09
+# Recovery Enforcing investigation — 2026-11-09 (historical)
+
+> **Status: closed.** The compatibility fixes below were integrated into
+> `build-recovery.sh`; this file is retained as bring-up evidence, not as a pending
+> debug plan. Current release builds use the grafted recovery with the `recovery`
+> domain Enforcing. The remaining permissive domains in the stock policy are
+> `init kernel ueventd vendor_init` (the 2026-11-12 build log prints exactly that),
+> and no recovery-domain permissive statement remains. A/B OTA sideload verification
+> is recorded in README.md/BUILD.md.
 
 ## Verified on device
 
@@ -37,7 +45,7 @@ normal Soong module is under ../recovery-probe. In this sandbox normal Soong
 startup failed to open its path-interposer socket; the probe was compiled with
 existing recovery compiler/linker parameters. Diagnostic build logs are in out/.
 
-## Important validation limits
+## Validation limits at the time of the investigation
 
 This is NOT a fully Enforcing release. The base image already contained permissive
 init, kernel, ueventd, vendor_init and recovery domains despite a global Enforcing
@@ -51,10 +59,11 @@ Do not use this device's slot A boot as the acceptance test or flash OTA to it
 without separately resolving that explicit constraint. A complete OTA test needs
 an appropriate device/partition layout.
 
-The current fixes are in the diagnostic builder, not integrated into
-build-recovery.sh. Before release, integrate verified compatibility changes,
-remove diagnostic access/tooling, address remaining permissive domains and
-remaining functional recovery denials, then validate the release artifact.
+The fixes were initially prototyped in the diagnostic builder. They have since been
+integrated into `build-recovery.sh`; the diagnostic images and probe are no longer
+required for a normal release build. The remaining stock permissive domains above are
+unchanged from OPPO's vendor policy and are not a reason to keep debugging recovery for
+normal flashing.
 
 ## Files
 

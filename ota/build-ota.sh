@@ -151,20 +151,40 @@ fi
 
 FULL=$OP5911_OTA_OUT/op5911-ota-full-$BUILD_NUMBER.zip
 TARGET_FILES=$OP5911_OTA_OUT/target_files-$BUILD_NUMBER.zip
+BOOTSTRAP=$OP5911_OTA_OUT/bootstrap
 [ -f "$FULL" ] || die "full OTA was not created: $FULL"
 [ -f "$TARGET_FILES" ] || die "target-files archive was not created: $TARGET_FILES"
+for f in boot.img dtbo.img vendor_boot-recovery.img vbmeta.img; do
+    [ -f "$BOOTSTRAP/$f" ] || die "bootstrap/$f was not created"
+done
 
-printf '\n============================================================\n'
-printf 'BUILD_DONE\n'
-printf '  BUILD_NUMBER: %s\n' "$BUILD_NUMBER"
-printf '  full OTA:     %s (%s)\n' "$FULL" "$(du -h "$FULL" | cut -f1)"
+INCR=
 if [ -n "$INCR_FROM" ]; then
     OLD=$(basename "$INCR_FROM" .zip)
     OLD=${OLD#target_files-}
     INCR=$OP5911_OTA_OUT/op5911-ota-incr-$OLD-to-$BUILD_NUMBER.zip
     [ -f "$INCR" ] || die "incremental OTA was not created: $INCR"
+fi
+
+printf '\n=== release directory (user-facing files only)\n'
+RELEASE_ROOT=$OP5911_OTA_OUT/release
+release_args=(--build-number "$BUILD_NUMBER" --output-root "$RELEASE_ROOT" --force)
+[ -n "$INCR" ] && release_args+=(--incremental "$INCR")
+if ! "$HERE/make-release.sh" "${release_args[@]}" 2>&1 | tee -a "$LOG"; then
+    die "release packaging failed"
+fi
+RELEASE=$RELEASE_ROOT/op5911-$BUILD_NUMBER
+[ -f "$RELEASE/SHA256SUMS" ] || die "release checksums were not created"
+
+printf '\n============================================================\n'
+printf 'BUILD_DONE\n'
+printf '  BUILD_NUMBER: %s\n' "$BUILD_NUMBER"
+printf '  full OTA:     %s (%s)\n' "$FULL" "$(du -h "$FULL" | cut -f1)"
+printf '  bootstrap:    %s\n' "$BOOTSTRAP"
+if [ -n "$INCR" ]; then
     printf '  incremental:  %s (%s)\n' "$INCR" "$(du -h "$INCR" | cut -f1)"
 fi
 printf '  target-files: %s (keep it for the next incremental)\n' "$TARGET_FILES"
+printf '  release dir:  %s (%s)\n' "$RELEASE" "$(du -sh "$RELEASE" | cut -f1)"
 printf '  log:          %s\n' "$LOG"
 printf '============================================================\n'

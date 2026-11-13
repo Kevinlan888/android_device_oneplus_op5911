@@ -2,6 +2,8 @@
 
 OnePlus Ace（PGZ110 / OP5911，MT6895）AOSP 15 移植的完整构建流程：从源码编译，到生成 OTA 卡刷包，再到首次安装和后续升级。设备树做了哪些改动、各项 bring-up 经验见 [README.md](README.md)。
 
+> 面向其他用户的刷入说明见 [FLASHING.md](FLASHING.md)；本文保留构建、打包和开发调试细节。
+
 本文所有命令都在 AOSP 源码根目录执行。除非特别说明，`D` 指 target-files 暂存目录：
 
 ```
@@ -31,7 +33,7 @@ out/target/product/op5911/obj/PACKAGING/target_files_intermediates/aosp_op5911-t
 1. **OTA 必须包含 first-stage fstab 要求的全部动态分区。** 完整 OTA 会按 payload 的分区列表重写目标槽的分区表，不在包里的分区会被直接删除，first-stage 找不到必需分区就重启进 bootloader。`ota/make-ota.sh` 已经把 14 个动态分区全部打进包里。
 2. **vbmeta 必须保持原厂 OPPO 签名**（公钥 sha1 `1a130f9a…`），只把 flags 改成 3。KeyMint 把 /data 的加密密钥绑定在 vbmeta 的 root of trust 上。换成无签名的 vbmeta，vold 解不开密钥，/data 挂不上，rec 会提示清除数据。**这时不要清数据**，换回原厂签名的 vbmeta 即可恢复。
 3. **recovery 的 fstab 里不能有 `formattable`。** 原厂 fstab 把 `/cache` 指向 `oplusreserve2`，`nvdata`、`nvcfg`、`protect1`、`protect2`（IMEI、射频校准）也都带 `formattable`。AOSP recovery 挂载失败时会直接格式化这些分区：2026-11-10 的一次测试就这样把 oplusreserve2 格式化了。`vendor_boot-patch/sanitize-recovery-fstab.sh` 负责去掉这些条目，`make-ota.sh` 出包前也会再检查一次。
-4. **进 rec 只能用 `adb reboot recovery` 或 `adb reboot sideload`，不要用 `fastboot reboot recovery`。** 这台机器的 bootloader 在 fastboot 下进 recovery 时固定走 A 槽的 vendor_boot，还会把活动槽改成 A。
+4. **正常使用 rec 只能用 `adb reboot recovery` 或 `adb reboot sideload`，不要用 `fastboot reboot recovery`。** 这台机器的 bootloader 在 fastboot 下进 recovery 时固定走 A 槽的 vendor_boot，还会把活动槽改成 A。唯一例外是 5.2 节首装：A 槽已经主动写入我们的正式 recovery，此时正好利用 bootloader 的这个行为进入临时 recovery。
 5. **安全补丁级别（SPL）不能回退。** 系统一旦用较新的 SPL 开过机，KeyMint 就会把密钥升级到这个级别，之后再用旧 SPL 的系统开机，/data 解不开。所有构建都固定把 SPL 写成 `2025-07-01`（`OP5911_SPL` 可以改，但只能往后调）。
 6. **内核和固件必须和 vendor 同一版本。** A、B 两个槽原来装的是不同版本的 ColorOS，有 22 个分区不一样。早先的 OTA 只写系统和 vendor，落到 A 槽时内核（5.10.236）和 gpueb、tee 等固件还是 A 槽的旧版本，配上 B 槽版本的 vendor 和内核模块：能开机，但 GPU 每帧要几秒、整机很卡，内核每隔几秒打一次 UFS runtime-suspend 的 WARN。现在 `make-ota.sh` 会把 B 槽的 21 个内核/固件分区一起打进包里，不管落到哪个槽都是同一套。
 7. **改 `device.mk`、`BoardConfig.mk` 或任何 `.bp`/`.mk` 后，下一次 `m` 会触发 soong 重新分析，在这台机器上要约 1 小时。** 改动尽量攒在一起。本文第 4 节以后的步骤全部只用 host 工具，不会触发重新分析。
@@ -104,7 +106,7 @@ device/oneplus/op5911/ota/build-ota.sh \
   --incremental-from "$OP5911_OTA_OUT/target_files-<旧版本>.zip"
 ```
 
-脚本自动生成新的 `BUILD_NUMBER`，依次刷新 host 工具、target-files 和 recovery 前置目标，再调用 `make-ota.sh`。`target-files-package` 已知的 vendor_boot 报错会被识别并继续；如果暂存树没有更新，或其中的 overlay APK 与 `PRODUCT_OUT` 不一致，脚本会停止，避免把旧内容打进包。构建日志在 `$OP5911_OTA_OUT/build-<版本>.log`。需要固定版本号时加 `--build-number <值>`。
+脚本自动生成新的 `BUILD_NUMBER`，依次刷新 host 工具、target-files 和 recovery 前置目标，再调用 `make-ota.sh`。`target-files-package` 已知的 vendor_boot 报错会被识别并继续；如果暂存树没有更新，或其中的 overlay APK 与 `PRODUCT_OUT` 不一致，脚本会停止，避免把旧内容打进包。最后会生成一个只含用户所需文件的 `release/op5911-<版本>/`。构建日志在 `$OP5911_OTA_OUT/build-<版本>.log`。需要固定版本号时加 `--build-number <值>`。
 
 手动分步打包（target-files 和 recovery 前置目标已经就绪时）：
 
@@ -132,12 +134,25 @@ device/oneplus/op5911/ota/make-ota.sh --incremental-from $OP5911_OTA_OUT/target_
 
 | 文件 | 用途 |
 |---|---|
-| `op5911-ota-full-<版本>.zip` | 完整包，约 2.9 GB |
+| `op5911-ota-full-<版本>.zip` | 完整包，约 3.2 GB |
 | `op5911-ota-incr-<旧>-to-<新>.zip` | 增量包，只有传了 `--incremental-from` 才生成 |
 | `target_files-<版本>.zip` | **请保留**，下次做增量包时作为源 |
 | `recovery-build-<版本>.props` | 写进 rec 的版本身份，留作记录 |
+| `bootstrap/` | 首装用的 `boot.img`、`dtbo.img`、`vendor_boot-recovery.img`、`vbmeta.img`；约 116 MB，不含 super raw |
+| `release/op5911-<版本>/` | **给用户的发布目录**：完整/增量 OTA、`bootstrap/`、`FLASHING.md`、`SHA256SUMS`；不含 target-files、调试 recovery 或 super raw |
 
 本地编译没设 `BUILD_NUMBER` 时版本号都是 `eng.<用户名>`，脚本会在文件名后加 `-月日时分`，避免新 target_files 覆盖作为增量源的旧文件。
+
+`build-ota.sh` 会自动调用 `make-release.sh` 生成发布目录。手动重打发布目录时：
+
+```bash
+device/oneplus/op5911/ota/make-release.sh --build-number <版本>
+# -> $OP5911_OTA_OUT/release/op5911-<版本>/
+```
+
+发布脚本只复制白名单文件，并在生成 `SHA256SUMS` 前拒绝 `super*.raw`、`super*.img`、`target_files` 和 debug 镜像。上传时只上传这个目录，不要直接打包整个 `$OP5911_OTA_OUT`。
+
+发布脚本还会从完整 OTA 的 payload 中抽出 `boot`、`dtbo`、`vendor_boot`、`vbmeta`，与 `bootstrap/` 逐字节比较。原因是标准 AVB 构建里的 `add_img_to_target_files`（或 `sign_target_files_apks`）可能重新生成、重签 vbmeta；这个设备树虽然关闭 AVB 并保留原厂签名、flags=3 的 vbmeta，但校验能防止以后改配置后把不一致的 bootstrap 发出去。当前完整包的 payload vbmeta 与 `bootstrap/vbmeta.img` 哈希一致。
 
 > `<版本>` 是 `ro.build.version.incremental`，也就是编译时的 `BUILD_NUMBER`。没设时是 `eng.<用户名>`，`make-ota.sh` 会给出警告（原因见第 3 节）。
 
@@ -166,6 +181,11 @@ RECOVERY_BUILD_PROPS=... device/oneplus/op5911/vendor_boot-patch/build-recovery-
 
 调试版只用来排查问题，不要打进要发布的 OTA。
 
+recovery 有界面。启动后可能先显示 `No command`，按**电源键 + 音量上键**即可打开菜单；这不
+影响 `adb sideload`、A/B OTA 或 boot HAL，也不需要为了首屏继续 debug recovery。调试版只在
+需要 root adb 的整盘 super 救援（5.3 节）和需要 `/metadata/rec/` 持久化 recovery 日志排障时
+使用。正常首装和日常升级都使用正式版，不要让调试版长期留在设备上。
+
 ### 4.2 recovery 嫁接做了什么
 
 原厂 vendor_boot 是一个合并的 ramdisk，里面有 first-stage 的东西（270 个内核模块、`fstab.mt6895`、`init.recovery.mt6895.rc`）和一个只在 recovery 模式下使用的 `/system`。`build-recovery.sh` 保留 first-stage 部分，把 `/system` 和 `/res` 换成 AOSP recovery 的，然后做以下修补：
@@ -181,12 +201,14 @@ RECOVERY_BUILD_PROPS=... device/oneplus/op5911/vendor_boot-patch/build-recovery-
 
 ## 5. 安装
 
+> 普通用户 OTA 升级请看 [FLASHING.md](FLASHING.md)；首次安装看本节。
+
 ### 5.1 日常升级（手机上已经是本系统）
 
 ```bash
 adb reboot sideload
 adb sideload $OP5911_OTA_OUT/op5911-ota-full-<版本>.zip     # 或增量包
-# 屏幕不亮（rec 没有显示），等 adb 状态回到 recovery：
+# 等 adb 状态回到 recovery；首屏 No command 时可按电源键 + 音量上键看菜单：
 adb wait-for-recovery
 adb reboot
 ```
@@ -229,56 +251,80 @@ adb reboot
 
 ### 5.2 首次安装（从原厂 ColorOS 或 GSI）
 
-原厂 rec 不认我们的 OTA 签名，原厂 super 也几乎是满的，所以第一次只能直接写分区。
+原厂 rec 不认我们的 OTA 签名，但正式版 recovery 认。首装正确做法不是整盘写 super，而是：
 
-> 实测情况：第 2 步的 vbmeta、第 4 步的整盘写 super、第 5 步的清 BCB 和换 rec，都在 2026-11-10 救回 B 槽时实测过。但「从原厂 ColorOS 开始」的完整流程（包括清 /data）没有从头完整走过一遍，第一次照做时请逐步确认。
+1. 把 B 槽同版本的 `boot`、`dtbo`、正式版 recovery 和原厂签名 `vbmeta` 写到 A 槽，作为临时启动环境；
+2. 从 A 槽 recovery 侧载完整 OTA，让 `update_engine` 删除 B 槽旧分区并重建全部 14 个动态分区；
+3. 清 `/data`，从 B 槽启动。
 
-1. 生成镜像：
+`super-b.raw` 只是维护者救砖镜像，**不是发布件，也不是首装前置条件**。
+
+> 验证状态：完整 OTA 在目标槽从空分区创建 14 个动态分区已经验证；A 槽 bootstrap 到 B 槽首装这条完整链路还没有从原厂 ColorOS 开始逐项实机走完。第一次操作时请保留可进入 bootloader 的手段。
+
+1. 生成 OTA 和首装 bootstrap 文件：
 
    ```bash
-   device/oneplus/op5911/ota/make-ota.sh                 # 准备好全部镜像和 vendor_boot
-   device/oneplus/op5911/ota/make-super.sh raw           # -> $OP5911_OTA_OUT/super-b.raw（12.3 GB）
+   device/oneplus/op5911/ota/make-ota.sh
+   # 输出：$OP5911_OTA_OUT/op5911-ota-full-<版本>.zip
+   #       $OP5911_OTA_OUT/bootstrap/{boot,dtbo,vendor_boot-recovery,vbmeta}.img
+   # 发布目录：device/oneplus/op5911/ota/make-release.sh --build-number <版本>
+   #       -> $OP5911_OTA_OUT/release/op5911-<版本>/
    ```
 
-2. 解锁 bootloader，在 fastboot 下写入物理分区：
+2. 解锁 bootloader，在 fastboot 下写入 A 槽。必须用 B 槽版本的 `boot`/`dtbo`：recovery 是从 B 槽 vendor_boot 嫁接的，而原厂 A/B 两槽的内核版本可能不同。
 
    ```bash
-   fastboot flash vendor_boot_b vendor/oneplus/op5911/images/vendor_boot-recovery-debug.img
-   fastboot flash vbmeta_b      $OP5911_STOCK_VBMETA
-   fastboot --set-active=b
-   fastboot reboot bootloader && fastboot getvar current-slot   # 确认是 b
+   fastboot flash boot_a         $OP5911_OTA_OUT/bootstrap/boot.img
+   fastboot flash dtbo_a         $OP5911_OTA_OUT/bootstrap/dtbo.img
+   fastboot flash vendor_boot_a  $OP5911_OTA_OUT/bootstrap/vendor_boot-recovery.img
+   fastboot flash vbmeta_a       $OP5911_OTA_OUT/bootstrap/vbmeta.img
+   fastboot --set-active=a
+   fastboot reboot recovery
    ```
 
-3. 进 B 槽的调试版 rec（需要 root 才能写 super）。从原厂系统执行 `adb reboot recovery`；如果系统已经起不来，就先把调试版 rec 也写进 `vendor_boot_a`，再用 `fastboot reboot recovery`（这个命令走 A 槽，见第 1.2 节第 4 条）。
+   这里是 `fastboot reboot recovery` 的唯一例外：A 槽现在装的是我们的正式 recovery，而这台 bootloader 固定从 A 槽进入 recovery，正好用来做首装引导。正常 OTA 场景仍按 1.2 节第 4 条，不要使用它。
 
-4. 整盘写入 super（12.3 GB 走 USB，约 20 分钟；中途不要打断，否则分区表和数据会不一致）：
+3. 在 recovery 中侧载完整 OTA（不能用增量包）：
 
    ```bash
-   adb root
-   adb exec-in 'dd of=/dev/block/by-name/super bs=4194304' < $OP5911_OTA_OUT/super-b.raw
+   adb devices                 # recovery
+   adb reboot sideload
+   adb devices                 # sideload
+   adb sideload $OP5911_OTA_OUT/op5911-ota-full-<版本>.zip
    ```
 
-5. 还在 rec 里，清掉 BCB（否则下次开机可能又进 rec），然后进 bootloader：
+   当前槽是 A，OTA 写入 B。recovery sideload 是 Virtual A/B 的非快照路径；空间不足时 `update_engine` 会删除 A 槽动态分区来腾空间，正在运行的 recovery 不受影响。终端必须出现 `status: 0` 或 `Install from ADB complete`。
+
+4. 清旧数据并从 B 启动：
 
    ```bash
-   adb shell 'dd if=/dev/zero of=/dev/block/by-name/misc bs=2048 count=1'
    adb reboot bootloader
-   ```
-
-6. 在 bootloader 的 fastboot 下，把 vendor_boot_b 换成正式版 rec。从 ColorOS 过来时还要清除 /data（加密方式不同；第一阶段 bring-up 时用的是 `fastboot erase userdata`）。然后开机：
-
-   ```bash
-   fastboot flash vendor_boot_b vendor/oneplus/op5911/images/vendor_boot-recovery.img
-   fastboot erase userdata          # 仅从 ColorOS / GSI 首次切换时需要
+   fastboot erase userdata
    fastboot --set-active=b
    fastboot reboot
    ```
 
-   开机后设置锁屏时如果被 FRP 拦住，见 README 的 FRP 一节。
+   开机后确认 `adb shell getprop ro.boot.slot_suffix` 为 `_b`。如果希望 A 槽也完整，再从 B 做一次完整 OTA；它会重建 A 槽的全部分区。
 
-之后就可以按 5.1 用 OTA 升级。第一次 OTA 会写入 A 槽：在 A 槽建出全部 14 个动态分区，同时把内核和 21 个固件分区换成和 vendor 同版本的那一套。**第一次请用完整包**（增量包的源 target_files 里还没有固件）。
+### 5.3 救援：整盘写入 super（不是发布流程）
 
-> `make-super.sh sparse` 可以生成给 `fastboot flash super` 用的稀疏镜像，但这条路径在本机**没有测试过**。
+仅当已有机器的 super metadata/动态分区彻底损坏、recovery 无法侧载，或需要离线救砖时才使用整盘 `super` 镜像。它和正常首装是两条路径，发布包不得包含该镜像。
+
+```bash
+device/oneplus/op5911/ota/make-ota.sh
+device/oneplus/op5911/ota/make-super.sh raw      # -> $OP5911_OTA_OUT/super-b.raw（12.3 GB）
+```
+
+救援时把调试版 rec 写到要启动的槽，进入 rec 后：
+
+```bash
+adb root
+adb exec-in 'dd of=/dev/block/by-name/super bs=4194304' < $OP5911_OTA_OUT/super-b.raw
+adb shell 'dd if=/dev/zero of=/dev/block/by-name/misc bs=2048 count=1'
+adb reboot bootloader
+```
+
+然后在 bootloader 中写回正式版 rec、清除 userdata，并把活动槽设到刚写入的槽。整盘写 super 约 20 分钟，中途不要打断。`make-super.sh sparse` 生成的镜像只能用于 `fastboot flash super`，这条路径尚未验证，不能代替上面的滴灌救援流程。
 
 ## 6. 排查
 
@@ -300,9 +346,10 @@ rec 里每次启动都会把日志留在 pstore 中；回到系统后，`/data/m
 
 | 路径 | 作用 |
 |---|---|
+| `FLASHING.md` | 面向用户的首次安装和 OTA 刷入指南 |
 | `ota/build-ota.sh` | 一键从源码到 OTA（第 4 节） |
 | `ota/make-ota.sh` | 出 OTA 整包和增量包（第 4 节） |
-| `ota/make-super.sh` | 首次安装用的完整 super 镜像 |
+| `ota/make-super.sh` | 救援用的完整 super 镜像（不进入发布包） |
 | `ota/local.env` | 本机原厂镜像的路径 |
 | `vendor-patch/patch-vendor-image.sh` | 原厂 vendor 打补丁并重打 erofs |
 | `vendor_boot-patch/build-recovery.sh` | 正式版 rec（Enforcing） |

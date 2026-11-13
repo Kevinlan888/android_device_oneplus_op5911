@@ -1,6 +1,6 @@
 # LineageOS 22.2 device tree: OnePlus Ace (PGZ110 / OP5911, MT6895)
 
-> **Build, OTA packaging and flashing: see [BUILD.md](BUILD.md)** (current, verified procedure).
+> **Build and OTA packaging: see [BUILD.md](BUILD.md). User flashing guide: see [FLASHING.md](FLASHING.md).**
 > The flashing notes further down in this README describe the stage-1 bring-up and are kept for history.
 
 ## Stage 1: what is built and what stays stock
@@ -127,10 +127,12 @@ If you add GApps, check the sizes before flashing.
 
 ## Custom vendor_boot / recovery (Stage 2 — graft AOSP recovery userspace)
 
-**Status: working.** `adb reboot recovery` boots a clean AOSP recovery with
-`adb sideload` (via `minadbd`) that trusts our OTA cert. OPPO's `phoenix_recovery`
-(whose UI had no sideload entry) is gone. The only gap is the recovery **display**
-(headless — screen stays off; sideload is driven entirely over USB and does not need it).
+**Status: working, no further debugging required for flashing/OTA.** `adb reboot recovery`
+boots a clean AOSP recovery with `adb sideload` (via `minadbd`) that trusts our OTA
+cert. OPPO's `phoenix_recovery` (whose UI had no sideload entry) is gone. Recovery has a
+working display: the initial `No command` screen is normal; press Power + Volume Up to
+open the menu. `adb reboot sideload` goes directly to sideload mode. Sideload, A/B OTA and
+the boot HAL all work without needing the menu.
 
 ### How it is built — graft, not a from-scratch recovery
 
@@ -211,10 +213,11 @@ fastboot reboot                        # ~26 s back to AOSP on slot b
 `bootctl` and `update_engine_client` are in the build: `bootctl get-active-boot-slot` /
 `get-current-slot` show the slots, and an OTA can be applied from the running OS (BUILD.md 5.1).
 
-**Not done yet:** recovery **display** (needs the MTK DRM/panel path wired into minui —
-first version is headless, which is enough for `adb sideload`). `recovery.fstab` still
-carries the GSI AVB keys (fine while AVB is disabled). Its `formattable` flags and the
-`/cache` (= oplusreserve2) and calibration-partition entries were removed after recovery
+**Entering the menu:** the initial `No command` screen is normal Android recovery behaviour,
+not a headless image or a failed install. Press Power + Volume Up to show the menu. The
+shipped recovery works for `adb sideload` and OTA without using the menu. `recovery.fstab`
+still carries the GSI AVB keys (fine while AVB is disabled). Its `formattable` flags and
+the `/cache` (= oplusreserve2) and calibration-partition entries were removed after recovery
 auto-formatted oplusreserve2 on 2026-11-10 - see BUILD.md.
 
 ## Things to check on first boot
@@ -269,10 +272,9 @@ Observed on the GSI:
   (`/system` + `/res`) into the stock combined vendor_boot ramdisk (see the "Custom
   vendor_boot / recovery" section above). Clean AOSP recovery + `adb sideload` via
   `minadbd`, trusting our testkey OTA cert; phoenix_recovery gone. Enter with
-  `adb reboot recovery` from the OS (never `fastboot reboot recovery` — rule 1). Headless
-  (no display yet).
-- Recovery **display**: wire the MTK DRM/panel into minui so the recovery UI is visible
-  (currently headless; sideload works without it).
+  `adb reboot recovery` from the OS (never `fastboot reboot recovery` — rule 1; the only
+  exception is the slot-A first-install bootstrap in BUILD.md 5.2). The initial `No command`
+  screen is normal; press Power + Volume Up to open the menu.
 - ~~Our own fstab that drops my_stock, my_preload and my_bigball~~ - **done** (first-stage fstab in
   vendor_boot + /vendor/etc/fstab.mt6895); frees about 5.6 GB of super so a full A/B OTA fits.
 - ~~OTA packages~~ - **done**: full and incremental A/B OTAs carrying all 14 dynamic partitions,
@@ -284,5 +286,5 @@ Observed on the GSI:
   are backed up in `ace/stock_backup_a_firmware/`.
 - ~~Install updates without recovery~~ - **done**: `update_engine_client` from the running OS
   (BUILD.md 5.1), ~1 min for an incremental, ~7 min for a full package.
-- Still open: other touch gestures, `nrmodeswitcher`, livedisplay, recovery display, a vendor
-  built from source, and a first build with `BUILD_NUMBER` set.
+- Still open: other touch gestures, `nrmodeswitcher`, livedisplay, and a vendor built from
+  source. (A build with `BUILD_NUMBER` set is now the normal OTA build path.)

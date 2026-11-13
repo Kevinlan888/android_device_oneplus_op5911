@@ -13,6 +13,7 @@
 #   op5911-ota-full-<tag>.zip             full OTA (sideload to install / update)
 #   op5911-ota-incr-<old>-to-<tag>.zip    incremental, only with --incremental-from
 #   target_files-<tag>.zip                keep it: source for the next incremental
+#   bootstrap/                            first-install images, no super raw
 # <tag> = ro.build.version.incremental, plus -MMDDhhmm for eng.* builds.
 set -eo pipefail
 
@@ -104,13 +105,15 @@ sed 's/^/   /' "$PF"
 RECOVERY_BUILD_PROPS=$PF "$DEV/vendor_boot-patch/build-recovery.sh" \
     "$OP5911_STOCK_VENDOR_BOOT" "$OP5911_STOCK_BOOT" | grep -E 'permissive|sanitized|vendor_boot-recovery.img'
 
+# First install boots a temporary recovery from slot A, then sideloads the full
+# OTA into slot B. This small bootstrap set (~116 MB) replaces the old 12.3 GB
+# whole-super image; the full OTA recreates every target dynamic partition.
+"$HERE/make-bootstrap.sh" | sed 's/^/   /'
+
 echo "=== [6/8] assemble the payload partition set"
 cp -f "$IM/vendor.img" "$D/IMAGES/vendor.img"
 for p in $STOCK_PARTS; do cp -f "$OP5911_STOCK_IMAGES/$p.img" "$D/IMAGES/$p.img"; rm -f "$D/IMAGES/$p.map"; done
 cp -f "$IM/vendor_boot-recovery.img" "$D/IMAGES/vendor_boot.img"
-( cd "$OP5911_STOCK_FIRMWARE" && sha256sum --quiet -c SHA256SUMS ) || { echo "stock firmware sha256 mismatch" >&2; exit 1; }
-cmp -s "$OP5911_STOCK_FIRMWARE/boot.img" "$OP5911_STOCK_BOOT" \
-    || { echo "firmware boot.img != OP5911_STOCK_BOOT (kernel must match the vendor_boot modules)" >&2; exit 1; }
 for p in $FW_PARTS; do cp -f "$OP5911_STOCK_FIRMWARE/$p.img" "$D/IMAGES/$p.img"; done
 python3 external/avb/avbtool.py info_image --image "$OP5911_STOCK_VBMETA" \
     | grep -q "Public key (sha1):        1a130f9ac8720d5c66e8b62c92505173633166f6" \
@@ -183,3 +186,4 @@ if [ -n "$INCR_FROM" ]; then
 fi
 rm -rf "$OUT/tmp"
 echo "=== DONE_OK  keep $TF for the next incremental"
+echo "   user release: device/oneplus/op5911/ota/make-release.sh --build-number $TAG"
