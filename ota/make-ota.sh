@@ -34,7 +34,7 @@ for v in OP5911_STOCK_IMAGES OP5911_STOCK_FIRMWARE OP5911_STOCK_VENDOR_BOOT OP59
 done
 
 cd "$TOP"
-set +e; source build/envsetup.sh >/dev/null 2>&1; lunch aosp_op5911-bp1a-userdebug >/dev/null 2>&1; set -e
+set +e; source build/envsetup.sh >/dev/null 2>&1; lunch aosp_op5911-trunk_staging-userdebug >/dev/null 2>&1; set -e
 export ANDROID_BUILD_TOP=$TOP
 export PATH="$ANDROID_HOST_OUT/bin:$PATH"
 

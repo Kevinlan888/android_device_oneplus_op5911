@@ -97,7 +97,7 @@ printf '============================================================\n'
 
 cd "$TOP"
 source build/envsetup.sh || die "build/envsetup.sh failed"
-lunch aosp_op5911-bp1a-userdebug || die "lunch aosp_op5911-bp1a-userdebug failed"
+lunch aosp_op5911-trunk_staging-userdebug || die "lunch aosp_op5911-trunk_staging-userdebug failed"
 export ANDROID_BUILD_TOP=$TOP
 
 run_m() {

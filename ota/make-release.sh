@@ -130,7 +130,7 @@ BAD=$(find "$STAGE" -type f \( -iname 'super*.raw' -o -iname 'super*.img' \
 [ -z "$BAD" ] || die "forbidden file in release staging: $BAD"
 
 {
-    echo "OP5911 AOSP 15"
+    echo "OP5911 AOSP 16"
     echo "build: $BUILD_NUMBER"
     echo "full OTA: ${FULL##*/}"
     [ -n "$INCR" ] && echo "incremental OTA: ${INCR##*/}"

@@ -1,6 +1,6 @@
 # OP5911 编译、打包与刷机
 
-OnePlus Ace（PGZ110 / OP5911，MT6895）AOSP 15 移植的完整构建流程：从源码编译，到生成 OTA 卡刷包，再到首次安装和后续升级。设备树做了哪些改动、各项 bring-up 经验见 [README.md](README.md)。
+OnePlus Ace（PGZ110 / OP5911，MT6895）AOSP 16 移植的完整构建流程：从源码编译，到生成 OTA 卡刷包，再到首次安装和后续升级。设备树做了哪些改动、各项 bring-up 经验见 [README.md](README.md)。
 
 > 面向其他用户的刷入说明见 [FLASHING.md](FLASHING.md)；本文保留构建、打包和开发调试细节。
 
@@ -42,9 +42,9 @@ out/target/product/op5911/obj/PACKAGING/target_files_intermediates/aosp_op5911-t
 
 ### 2.1 源码与编译目标
 
-- 源码：AOSP 15（`android-15.0.0_r36`），设备树放在 `device/oneplus/op5911`，预编译文件放在 `vendor/oneplus/op5911`。
-- lunch 目标：`aosp_op5911-bp1a-userdebug`。
-- 设备树以外的源码补丁在 `patches/`，`repo sync` 之后要先打上（见 `patches/README.md`）。目前只有一个：AOSP 短信不补这个就永远不弹通知。
+- 源码：AOSP 16（`trunk_staging`，SDK 36），设备树放在 `device/oneplus/op5911`，预编译文件放在 `vendor/oneplus/op5911`。
+- lunch 目标：`aosp_op5911-trunk_staging-userdebug`。
+- 设备树以外的源码补丁在 `patches/`，`repo sync` 之后要先打上（见 `patches/README.md`）：包括 AOSP 短信通知、Android 16 下 `MtkIms` 缺失 `TelephonyMetrics`、以及 `gpuservice` BPF map 缺失崩溃修复。
 
 ### 2.2 原厂输入文件
 
@@ -79,7 +79,7 @@ system、system_ext、product 都是 erofs（只读），所以 MindTheGapps 的
 
 ```bash
 source build/envsetup.sh
-lunch aosp_op5911-bp1a-userdebug
+lunch aosp_op5911-trunk_staging-userdebug
 
 # 第一次需要的 host 工具
 m fsck.erofs mkfs.erofs otatools
