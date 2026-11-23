@@ -1,0 +1,39 @@
+From 12bec6665b79fe813c08f57c5a2cf121d0574a36 Mon Sep 17 00:00:00 2001
+From: kevin <kevin@kevinlan.com>
+Date: Sun, 22 Nov 2026 06:47:05 -0800
+Subject: [PATCH] gpuservice: avoid aborting in GpuWork::getBpfMap when BPF map
+ is missing
+
+GpuWork::getBpfMap() constructs bpf::BpfMap(mapPath), whose constructor
+calls abortOnMismatch() and aborts the process when the pinned gpuWork BPF
+map does not exist (for example on Android 12 / 5.10 vendor kernels without
+gpu_work_period BPF support). This causes /system/bin/gpuservice to crash
+with SIGABRT every 30 seconds after its startup delay.
+
+Use default-constructed BpfMap + map.init(mapPath) so missing BPF maps
+return an error and GpuWork::initialize() exits cleanly without aborting.
+
+Change-Id: I6249a9d834358696e9ff8b23c95b0653d8fd17de
+---
+ services/gpuservice/gpuwork/GpuWork.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/services/gpuservice/gpuwork/GpuWork.cpp b/services/gpuservice/gpuwork/GpuWork.cpp
+index 4ad758a974..d6ed903cf4 100644
+--- a/services/gpuservice/gpuwork/GpuWork.cpp
++++ b/services/gpuservice/gpuwork/GpuWork.cpp
+@@ -67,8 +67,9 @@ bool equalGpuIdUid(const android::gpuwork::GpuIdUid& l, const android::gpuwork::
+ template <class Key, class Value>
+ bool getBpfMap(const char* mapPath, bpf::BpfMap<Key, Value>* out) {
+     errno = 0;
+-    auto map = bpf::BpfMap<Key, Value>(mapPath);
+-    if (!map.isValid()) {
++    bpf::BpfMap<Key, Value> map;
++    auto res = map.init(mapPath);
++    if (!res.ok() || !map.isValid()) {
+         ALOGW("Failed to create bpf map from %s [%d(%s)]", mapPath, errno, strerror(errno));
+         return false;
+     }
+-- 
+2.43.0
+

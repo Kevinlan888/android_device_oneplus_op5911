@@ -114,6 +114,20 @@
          SystemUI only knows TYPE_PICK_UP_GESTURE. -->
     <bool name="config_dozePulsePickup">true</bool>
 
+    <!-- Minimum screen backlight (0.01) + non-empty backlight/nits mapping so
+         DisplayDeviceConfig builds a clamped [0.01, 1.0] brightness-to-backlight
+         spline instead of the default identity [0.0, 1.0] spline (which let the
+         brightness slider drive hardware backlight all the way to 0.0 / off). -->
+    <item name="config_screenBrightnessSettingMinimumFloat" format="float" type="dimen">0.01</item>
+    <integer-array name="config_screenBrightnessBacklight">
+        <item>1</item>
+        <item>255</item>
+    </integer-array>
+    <array name="config_screenBrightnessNits">
+        <item>2.0</item>
+        <item>500.0</item>
+    </array>
+
     <!-- Pulse brightness (integer 1-255). A pulse puts the display in STATE_ON
          at this level; AOD itself (STATE_DOZE) uses the panel's own low-power
          brightness and ignores it. The default 5 was barely visible, 25 and 40
