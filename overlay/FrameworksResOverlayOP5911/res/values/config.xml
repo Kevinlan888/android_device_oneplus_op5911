@@ -133,4 +133,9 @@
          brightness and ignores it. The default 5 was barely visible, 25 and 40
          too bright; 15 picked on device (2026-11-10). -->
     <integer name="config_screenBrightnessDoze">15</integer>
+
+    <!-- Override GoogleConfigOverlay mainline package names to match AOSP APEXes -->
+    <string name="config_servicesExtensionPackage" translatable="false">android.ext.services</string>
+    <string name="config_defaultAssistantAccessComponent" translatable="false">android.ext.services/android.ext.services.notification.Assistant</string>
+    <string name="config_defaultCaptivePortalLoginPackageName" translatable="false">com.android.captiveportallogin</string>
 </resources>
