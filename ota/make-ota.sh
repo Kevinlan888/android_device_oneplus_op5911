@@ -34,11 +34,13 @@ for v in OP5911_STOCK_IMAGES OP5911_STOCK_FIRMWARE OP5911_STOCK_VENDOR_BOOT OP59
 done
 
 cd "$TOP"
-set +e; source build/envsetup.sh >/dev/null 2>&1; lunch aosp_op5911-trunk_staging-userdebug >/dev/null 2>&1; set -e
+OP5911_PRODUCT=${OP5911_PRODUCT:-lineage_op5911}
+OP5911_LUNCH=${OP5911_LUNCH:-${OP5911_PRODUCT}-bp4a-userdebug}
+set +e; source build/envsetup.sh >/dev/null 2>&1; lunch "$OP5911_LUNCH" >/dev/null 2>&1; set -e
 export ANDROID_BUILD_TOP=$TOP
 export PATH="$ANDROID_HOST_OUT/bin:$PATH"
 
-D=out/target/product/op5911/obj/PACKAGING/target_files_intermediates/aosp_op5911-target_files
+D=out/target/product/op5911/obj/PACKAGING/target_files_intermediates/${OP5911_PRODUCT}-target_files
 IM=vendor/oneplus/op5911/images
 OUT=$OP5911_OTA_OUT
 SPL=${OP5911_SPL:-2025-07-01}
@@ -74,6 +76,7 @@ grep -E '^ro\.build\.(tags|version\.security_patch)=|^ro\.product\.system\.devic
 
 echo "=== [3/8] (re)build system/system_ext/product images from the edited tree"
 rm -f "$D"/IMAGES/{system,system_ext,product}.{img,map} "$D"/META/care_map.{pb,txt}
+mkdir -p "$D/VENDOR"
 add_img_to_target_files -a "$D"
 
 echo "=== [4/8] vendor image (stock vendor + vendor-patch)"
@@ -93,7 +96,8 @@ pprop() {
 }
 S=$D/SYSTEM/build.prop
 INCR=$(prop ro.build.version.incremental "$S")
-FP="$(pprop brand)/$(pprop name)/$(pprop device):$(prop ro.build.version.release_or_codename "$S")/$(prop ro.build.id "$S")/$INCR:$(prop ro.build.type "$S")/$(prop ro.build.tags "$S")"
+FP=$(prop ro.build.fingerprint "$S")
+[ -n "$FP" ] || FP="$(pprop brand)/$(pprop name)/$(pprop device):$(prop ro.build.version.release_or_codename "$S")/$(prop ro.build.id "$S")/$INCR:$(prop ro.build.type "$S")/$(prop ro.build.tags "$S")"
 PF=$OUT/recovery-build-$INCR.props
 {
     echo "ro.build.fingerprint=$FP"
@@ -168,7 +172,7 @@ case " $(echo $PROPS) " in *" SYSTEM/build.prop "*) ;; *) echo "SYSTEM/build.pro
 ( cd "$D" && zip -q -0 -r "$TF" META IMAGES OTA $PROPS )
 FULL=$OUT/op5911-ota-full-$TAG.zip
 rm -f "$FULL"
-ota_from_target_files "$TF" "$FULL"
+ota_from_target_files --extracted_input_target_files "$D" "$TF" "$FULL"
 check_meta() {
     local z=$1 post
     post=$(unzip -p "$z" META-INF/com/android/metadata | sed -n 's/^post-build=//p')
@@ -181,7 +185,7 @@ if [ -n "$INCR_FROM" ]; then
     OLD=$(basename "$INCR_FROM" .zip); OLD=${OLD#target_files-}
     INC=$OUT/op5911-ota-incr-$OLD-to-$TAG.zip
     rm -f "$INC"
-    ota_from_target_files -i "$INCR_FROM" "$TF" "$INC"
+    ota_from_target_files --extracted_input_target_files "$D" -i "$INCR_FROM" "$TF" "$INC"
     check_meta "$INC"
 fi
 rm -rf "$OUT/tmp"

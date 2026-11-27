@@ -6,4 +6,7 @@
 <resources>
     <!-- Show the "Smooth display" (peak refresh rate) toggle -->
     <bool name="config_show_smooth_display">true</bool>
+
+    <!-- Show the "Minimum refresh rate" selector -->
+    <bool name="config_show_min_refresh_rate_switch">true</bool>
 </resources>

@@ -15,7 +15,8 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 TOP=$(cd "$HERE/../../../.." && pwd)
 [ -f "$HERE/local.env" ] && . "$HERE/local.env"
 MODE=${1:-raw}
-D=$TOP/out/target/product/op5911/obj/PACKAGING/target_files_intermediates/aosp_op5911-target_files
+OP5911_PRODUCT=${OP5911_PRODUCT:-lineage_op5911}
+D=$TOP/out/target/product/op5911/obj/PACKAGING/target_files_intermediates/${OP5911_PRODUCT}-target_files
 LPMAKE=$TOP/out/host/linux-x86/bin/lpmake
 PARTS="system system_ext product vendor odm vendor_dlkm odm_dlkm my_product my_engineering my_company my_carrier my_region my_heytap my_manifest"
 args=()

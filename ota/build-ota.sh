@@ -21,7 +21,9 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 DEV=$(dirname "$HERE")
 TOP=$(cd "$DEV/../../.." && pwd)
 PRODUCT_OUT=$TOP/out/target/product/op5911
-D=$PRODUCT_OUT/obj/PACKAGING/target_files_intermediates/aosp_op5911-target_files
+OP5911_PRODUCT=${OP5911_PRODUCT:-lineage_op5911}
+OP5911_LUNCH=${OP5911_LUNCH:-${OP5911_PRODUCT}-bp4a-userdebug}
+D=$PRODUCT_OUT/obj/PACKAGING/target_files_intermediates/${OP5911_PRODUCT}-target_files
 RAMDISK_REL=out/target/product/op5911/ramdisk-recovery.img
 
 usage() {
@@ -97,7 +99,7 @@ printf '============================================================\n'
 
 cd "$TOP"
 source build/envsetup.sh || die "build/envsetup.sh failed"
-lunch aosp_op5911-trunk_staging-userdebug || die "lunch aosp_op5911-trunk_staging-userdebug failed"
+lunch "$OP5911_LUNCH" || die "lunch $OP5911_LUNCH failed"
 export ANDROID_BUILD_TOP=$TOP
 
 run_m() {
@@ -112,7 +114,7 @@ fi
 
 printf '\n=== [2/4] refresh target-files (known vendor_boot error is expected)\n'
 if ! run_m target-files-package BUILD_NUMBER="$BUILD_NUMBER"; then
-    if ! grep -qF -- '--vendor_boot not compatible with given header version' "$LOG"; then
+    if ! grep -qE -- '--vendor_boot not compatible with given header version|KeyError: .vendor.' "$LOG"; then
         die "target-files-package failed for an unexpected reason"
     fi
     [ -d "$D/META" ] || die "target-files staging was not populated"

@@ -24,3 +24,6 @@ PRODUCT_BUILD_PROP_OVERRIDES += \
     BuildFingerprint=OnePlus/PGZ110/OP5911:15/AP3A.240617.008/S.1ebee3f-1-75b3d:user/release-keys \
     DeviceName=OP5911 \
     DeviceProduct=PGZ110
+
+# Allow prebuilt vendor/gms APKs with mismatched uses-library declarations
+PRODUCT_BROKEN_VERIFY_USES_LIBRARIES := true

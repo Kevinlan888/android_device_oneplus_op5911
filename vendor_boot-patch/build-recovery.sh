@@ -90,6 +90,9 @@ rm -rf "$WORK/rd/res"
 cp -a "$RROOT/res" "$WORK/rd/res"
 rm -f "$WORK/rd/res/Android.bp"
 
+echo "== allowing passwordless adb shell in recovery (ro.adb.secure=0)"
+sed -i 's/^ro\.adb\.secure=.*/ro.adb.secure=0/' "$WORK/rd/prop.default"
+
 echo "== appending ro.recovery.usb.* props (AOSP gadget VID/PID)"
 # prop.default is the real file; /default.prop is a symlink to it.
 if ! grep -q '^ro.recovery.usb.vid=' "$WORK/rd/prop.default"; then

@@ -50,6 +50,14 @@ TARGET_SCREEN_DENSITY := 480
 TARGET_SCREEN_HEIGHT := 2412
 TARGET_SCREEN_WIDTH := 1080
 
+# SurfaceFlinger refresh rate timers: keep 120Hz through animations/flings,
+# drop to low refresh rate (30Hz) only after 2.5s of true screen idle.
+PRODUCT_SYSTEM_PROPERTIES += \
+    ro.surface_flinger.use_content_detection_for_refresh_rate=true \
+    ro.surface_flinger.set_touch_timer_ms=2500 \
+    ro.surface_flinger.set_idle_timer_ms=2500 \
+    ro.surface_flinger.set_display_power_timer_ms=2000
+
 # Overlays
 PRODUCT_ENFORCE_RRO_TARGETS := *
 PRODUCT_PACKAGES += \
