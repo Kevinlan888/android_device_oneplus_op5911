@@ -138,4 +138,5 @@
     <string name="config_servicesExtensionPackage" translatable="false">android.ext.services</string>
     <string name="config_defaultAssistantAccessComponent" translatable="false">android.ext.services/android.ext.services.notification.Assistant</string>
     <string name="config_defaultCaptivePortalLoginPackageName" translatable="false">com.android.captiveportallogin</string>
+    <string name="config_defaultModuleMetadataProvider" translatable="false">com.android.modulemetadata</string>
 </resources>
