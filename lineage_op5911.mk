@@ -29,4 +29,4 @@ PRODUCT_BUILD_PROP_OVERRIDES += \
 PRODUCT_BROKEN_VERIFY_USES_LIBRARIES := true
 
 # Keep ro.debuggable=1 on userdebug so adb root / Rooted debugging works during bring-up
-PRODUCT_NOT_DEBUGGABLE_IN_USERDEBUG := false
+PRODUCT_NOT_DEBUGGABLE_IN_USERDEBUG :=
