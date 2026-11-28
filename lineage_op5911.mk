@@ -27,3 +27,6 @@ PRODUCT_BUILD_PROP_OVERRIDES += \
 
 # Allow prebuilt vendor/gms APKs with mismatched uses-library declarations
 PRODUCT_BROKEN_VERIFY_USES_LIBRARIES := true
+
+# Keep ro.debuggable=1 on userdebug so adb root / Rooted debugging works during bring-up
+PRODUCT_NOT_DEBUGGABLE_IN_USERDEBUG := false
