@@ -2,6 +2,9 @@
 <SCNTABLE>
     <!--delete for powerhint freq opt-->
     <scenario powerhint="MTKPOWER_HINT_ACT_SWITCH">
+        <data cmd="PERF_RES_GPU_GED_TIMER_BASE_DVFS_MARGIN" param1="50"></data>
+        <data cmd="PERF_RES_GPU_GED_LOADING_BASE_DVFS_STEP" param1="16"></data>
+        <data cmd="PERF_RES_GPU_FREQ_MIN" param1="7"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_0" param1="3000000"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_1" param1="3000000"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_2" param1="3000000"></data>
@@ -13,6 +16,9 @@
         <data cmd="PERF_RES_POWER_HINT_EXT_HINT_HOLD_TIME" param1="500"></data>
     </scenario>
     <scenario powerhint="MTKPOWER_HINT_PACK_SWITCH">
+        <data cmd="PERF_RES_GPU_GED_TIMER_BASE_DVFS_MARGIN" param1="50"></data>
+        <data cmd="PERF_RES_GPU_GED_LOADING_BASE_DVFS_STEP" param1="16"></data>
+        <data cmd="PERF_RES_GPU_FREQ_MIN" param1="7"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_0" param1="3000000"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_1" param1="3000000"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_2" param1="3000000"></data>
@@ -25,6 +31,9 @@
         <data cmd="PERF_RES_POWER_HINT_EXT_HINT_HOLD_TIME" param1="1500"></data>
     </scenario>
     <scenario powerhint="LAUNCH">
+        <data cmd="PERF_RES_GPU_GED_TIMER_BASE_DVFS_MARGIN" param1="50"></data>
+        <data cmd="PERF_RES_GPU_GED_LOADING_BASE_DVFS_STEP" param1="16"></data>
+        <data cmd="PERF_RES_GPU_FREQ_MIN" param1="7"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_0" param1="3000000"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_1" param1="3000000"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_2" param1="3000000"></data>
@@ -95,6 +104,9 @@
     </scenario>
     <!-- OP5911 GSI: AOSP setBoost(INTERACTION) touch boost -->
     <scenario powerhint="INTERACTION">
+        <data cmd="PERF_RES_GPU_GED_TIMER_BASE_DVFS_MARGIN" param1="50"></data>
+        <data cmd="PERF_RES_GPU_GED_LOADING_BASE_DVFS_STEP" param1="16"></data>
+        <data cmd="PERF_RES_GPU_FREQ_MIN" param1="12"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_0" param1="1500000"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_1" param1="1800000"></data>
         <data cmd="PERF_RES_CPUFREQ_MIN_CLUSTER_2" param1="1800000"></data>

@@ -100,6 +100,24 @@ fi
 grep -q '^debug.renderengine.backend=skiaglthreaded$' "$V/build.prop" \
     || { echo "unexpected debug.renderengine.backend in vendor build.prop" >&2; exit 1; }
 
+# OP5911: 120Hz SurfaceFlinger timings, backpressure, and Vulkan HWUI
+# (keep skiaglthreaded for Android 12 Mali-G610 RenderEngine compatibility)
+sed -i -E '/^debug\.sf\.(disable_backpressure|enable_gl_backpressure|latch_unsignaled|hwc\.min\.duration|early\.sf\.duration|earlyGl\.sf\.duration|late\.sf\.duration|early\.app\.duration|earlyGl\.app\.duration|late\.app\.duration)=/d; /^debug\.hwui\.renderer=/d' "$V/build.prop"
+cat >> "$V/build.prop" <<'EOF'
+# OP5911: 120Hz SurfaceFlinger timings, backpressure, and Vulkan HWUI
+debug.sf.disable_backpressure=0
+debug.sf.enable_gl_backpressure=1
+debug.sf.latch_unsignaled=1
+debug.sf.hwc.min.duration=1000000
+debug.sf.early.sf.duration=6500000
+debug.sf.earlyGl.sf.duration=7500000
+debug.sf.late.sf.duration=6500000
+debug.sf.early.app.duration=7500000
+debug.sf.earlyGl.app.duration=7500000
+debug.sf.late.app.duration=7500000
+debug.hwui.renderer=skiavk
+EOF
+
 # Drop the ColorOS-only app partitions (my_stock 3.8G, my_preload 1.4G,
 # my_bigball 0.3G) - AOSP never reads them, and keeping them makes a full A/B OTA
 # (which must carry every dynamic partition the fstab requires) too big for super.
